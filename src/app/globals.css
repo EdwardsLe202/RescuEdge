@@ -1,0 +1,265 @@
+@import "tailwindcss";
+
+/* Font Awesome Fonts */
+@font-face {
+  font-family: 'Font Awesome 6 Brands';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/fonts/fa-brands-400.woff2') format('woff2'),
+       url('/fonts/fa-brands-400.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Font Awesome 6 Free';
+  font-style: normal;
+  font-weight: 400;
+  src: url('/fonts/fa-regular-400.woff2') format('woff2'),
+       url('/fonts/fa-regular-400.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Font Awesome 6 Free';
+  font-style: normal;
+  font-weight: 900;
+  src: url('/fonts/fa-solid-900.woff2') format('woff2'),
+       url('/fonts/fa-solid-900.ttf') format('truetype');
+}
+
+/* Font Awesome Icon Classes */
+.fa-solid, .fas {
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+}
+
+.fa-regular, .far {
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 400;
+}
+
+.fa-brands, .fab {
+  font-family: 'Font Awesome 6 Brands';
+  font-weight: 400;
+}
+
+.fa-solid, .fa-regular, .fa-brands,
+.fas, .far, .fab {
+  display: inline-block;
+  font-style: normal;
+  font-variant: normal;
+  text-rendering: auto;
+  line-height: 1;
+}
+
+:root {
+  --background: #f0f3f8;
+  --foreground: #1e293b;
+  --indigo-primary: #3f51b5;
+  --indigo-hover: #303f9f;
+  --sidebar-active: #e9ecfc;
+  --card-bg: #ffffff;
+  --text-muted: #64748b;
+  --border-light: rgba(0, 0, 0, 0.06);
+}
+
+body {
+  background: var(--background);
+  background-image: radial-gradient(circle at 10% 10%, #f7f9fc 0%, #e2e8f0 100%);
+  color: var(--foreground);
+  font-size: 14px;
+  line-height: 1.6;
+  font-weight: 400;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Elegant sleek scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* Pulse animation for the Live badge */
+@keyframes pulse-live {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse-live {
+  animation: pulse-live 1.5s infinite ease-in-out;
+}
+
+/* Scanning border glow for video AI detection boxes */
+@keyframes glow-red {
+  0%, 100% {
+    box-shadow: 0 0 4px rgba(239, 68, 68, 0.6), inset 0 0 4px rgba(239, 68, 68, 0.4);
+    border-color: rgba(239, 68, 68, 1);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(239, 68, 68, 1), inset 0 0 8px rgba(239, 68, 68, 0.8);
+    border-color: rgba(239, 68, 68, 0.8);
+  }
+}
+
+.animate-glow-red {
+  animation: glow-red 2s infinite ease-in-out;
+}
+
+/* Custom Animations */
+@keyframes float {
+  0% {
+    margin-top: -120px;
+  }
+  50% {
+    margin-top: -80px;
+  }
+  100% {
+    margin-top: -120px;
+  }
+}
+
+@keyframes float2 {
+  0% {
+    transform: translateY(-10px);
+  }
+  50% {
+    transform: translateY(40px);
+  }
+  100% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-float {
+  animation: float 1s infinite;
+}
+
+.animate-float2 {
+  transform: translateY(0px);
+  animation: float2 2s ease-in-out infinite;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+.animate-scroll {
+  animation: scroll 30s linear infinite;
+}
+
+/* Custom Utility Classes */
+.text-orange {
+  color: var(--color-darkorange);
+}
+
+.bg-orange-gradient {
+  background: linear-gradient(90deg, rgba(246, 140, 31, 1) 21%, rgba(227, 24, 142, 1) 100%);
+  box-shadow: 0 2em 2em 0em rgba(246, 140, 31, 0.37);
+}
+
+.card-bg {
+  background-color: #181836;
+}
+
+.card-bg-2 {
+  background-color: #262647;
+  box-shadow: 0 2em 2em 0em rgba(0, 0, 0, 0.5);
+}
+
+.btn-outline-orange {
+  border: 2px solid var(--color-darkorange);
+  color: var(--color-darkorange);
+  transition: all 0.3s ease;
+}
+
+.btn-outline-orange:hover {
+  background: var(--color-darkorange);
+  color: white;
+}
+
+/* Section backgrounds */
+.bg-pattern {
+  background-image: url('/images/bg2.png');
+  background-size: cover;
+  background-position: center;
+}
+
+.bg-pattern-2 {
+  background-image: url('/images/bg3.png');
+  background-size: cover;
+  background-position: center;
+}
+
+.hero-overlay {
+  background-image: url('/images/banner-bg2.png');
+  background-repeat: repeat-x;
+  height: 242px;
+}
+
+/* Blog and Article Styles */
+.thumb-img {
+  overflow: hidden;
+  border-radius: 0.5rem;
+}
+
+.thumb-img img {
+  transition: transform 0.3s ease;
+}
+
+.thumb-img:hover img {
+  transform: scale(1.05);
+}
+
+/* Pricing Cards */
+.price-check {
+  list-style: none;
+  padding-left: 0;
+}
+
+.price-check li::before {
+  content: '✓';
+  color: var(--color-darkorange);
+  margin-right: 0.5rem;
+}
