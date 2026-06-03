@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import RescueRadar from "@/components/RescueRadar";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Shield, Key, Eye, HelpCircle, Activity, Globe, CheckCircle2, AlertCircle, Mail, Lock, User, Sparkles, ChevronDown, ChevronUp, ArrowLeft, Send } from "lucide-react";
+import React, { useEffect, useState } from "react";
 
 export default function LoginPage() {
   const { data: session, status } = useSession();
@@ -25,6 +26,8 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [showDevHelp, setShowDevHelp] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // If already authenticated, redirect to dashboard
   useEffect(() => {
@@ -226,327 +229,347 @@ export default function LoginPage() {
     }
   };
 
-  if (status === "loading") {
-    return (
-      <div className="w-screen h-screen bg-[#070b13] flex items-center justify-center flex-col gap-4 font-sans text-white">
-        <div className="relative w-16 h-16 flex items-center justify-center">
-          <div className="absolute inset-0 border-4 border-teal-500/20 rounded-full animate-spin border-t-teal-500"></div>
-          <Shield className="w-6 h-6 text-teal-400 animate-pulse" />
-        </div>
-        <p className="text-xs font-semibold text-slate-400 tracking-widest uppercase">
-          Verifying secure session...
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <div className="relative w-screen h-screen bg-[#090d16] flex items-center justify-center overflow-y-auto py-12 px-4 font-sans text-white">
-      {/* Dynamic Glowing Mesh Background */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-500/10 rounded-full blur-[120px] animate-pulse duration-5000 pointer-events-none"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-emerald-500/10 rounded-full blur-[120px] animate-pulse duration-7000 pointer-events-none"></div>
-      
-      {/* Grid Pattern overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.007)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.007)_1px,transparent_1px)] bg-[size:30px_30px] pointer-events-none"></div>
-
-      <div className="w-full max-w-[460px] z-10 my-auto animate-fadeIn">
-        
-        {/* Logo and System Status */}
-        <div className="flex flex-col items-center text-center mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-teal-500/20 to-emerald-500/20 border border-teal-500/30 flex items-center justify-center shadow-lg shadow-teal-500/10 mb-3 hover:scale-105 transition-transform duration-300">
-            <Shield className="w-6 h-6 text-teal-400" />
-          </div>
-          
-          <h1 className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-teal-300 via-emerald-300 to-indigo-300 bg-clip-text text-transparent">
-            RescuEdge
-          </h1>
-          <p className="text-slate-500 text-[10px] mt-0.5 font-bold tracking-widest uppercase">
-            Intelligent Control Center
-          </p>
+    <div className="h-screen relative flex flex-col md:flex-row overflow-hidden font-sans">
+      {/* Background: dark slate on left, white on right */}
+      <div className="absolute inset-0">
+        <div className="hidden md:flex h-full">
+          <div className="w-1/2 bg-[#090d16]" />
+          <div className="w-1/2 bg-white" />
         </div>
+        <div className="md:hidden h-full bg-white" />
+      </div>
 
-        {/* Central Glassmorphic Portal Card */}
-        <div className="bg-slate-900/50 backdrop-blur-2xl border border-slate-800 rounded-3xl shadow-2xl p-6 relative overflow-hidden">
-          {/* Subtle top light bar */}
-          <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-teal-500/30 to-transparent"></div>
+      {/* Left Side - Code-based Rescue Animation (hidden on mobile, sticky) */}
+      <div className="hidden md:flex w-1/2 h-full items-center justify-center relative z-10 bg-[#090d16]">
+        <RescueRadar />
+      </div>
 
-          {/* Tab Switcher - only visible on signin and signup stages */}
-          {activeTab !== "verify" && (
-            <div className="flex bg-slate-950/60 p-1 rounded-2xl border border-slate-800/80 mb-6">
-              <button
-                onClick={() => handleTabChange("signin")}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${
-                  activeTab === "signin"
-                    ? "bg-slate-800 text-teal-400 shadow-md border border-slate-700/50"
-                    : "text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                <Key className="w-3.5 h-3.5" />
-                Sign In
-              </button>
-              <button
-                onClick={() => handleTabChange("signup")}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer ${
-                  activeTab === "signup"
-                    ? "bg-slate-800 text-teal-400 shadow-md border border-slate-700/50"
-                    : "text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                Register
-              </button>
-            </div>
-          )}
+      {/* Right Side - Forms */}
+      <div className="w-full md:w-1/2 h-full overflow-y-auto flex items-center justify-center p-6 md:p-8 relative z-10 bg-white">
+        <div className="w-full max-w-md">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-extrabold text-slate-900 mb-2">
+              {activeTab === "signin" ? "Login" : activeTab === "signup" ? "Create account" : "Verify Email"}
+            </h1>
+            <p className="text-slate-500 text-sm">
+              {activeTab === "signin"
+                ? "Sign in to access your control panel"
+                : activeTab === "signup"
+                ? "Start your rescue coordination session"
+                : `Enter the verification code sent to ${verifyingEmail}`}
+            </p>
+          </div>
 
-          {/* Feedback Alerts Banners */}
-          {errorMessage && (
-            <div className="flex items-start gap-2.5 bg-red-500/10 border border-red-500/20 rounded-xl p-3 mb-5 animate-shake">
-              <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-              <p className="text-xs text-red-400 font-medium leading-relaxed">{errorMessage}</p>
-            </div>
-          )}
-          
-          {successMessage && (
-            <div className="flex items-start gap-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 mb-5 animate-fadeIn">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-              <p className="text-xs text-emerald-400 font-medium leading-relaxed">{successMessage}</p>
-            </div>
-          )}
+          <div className="space-y-6">
+            {errorMessage && (
+              <div className="p-3.5 bg-red-50 border border-red-100 rounded-xl">
+                <p className="text-red-600 text-xs font-semibold">{errorMessage}</p>
+              </div>
+            )}
 
-          {/* Forms Routing */}
-          {activeTab === "signin" && (
-            <form onSubmit={handleSignInSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            {successMessage && (
+              <div className="p-3.5 bg-emerald-50 border border-emerald-100 rounded-xl">
+                <p className="text-emerald-700 text-xs font-semibold">{successMessage}</p>
+              </div>
+            )}
+
+            {activeTab === "signin" && (
+              <form onSubmit={handleSignInSubmit} className="space-y-6">
+                <div>
+                  <label className="block text-slate-700 text-sm font-semibold mb-2">
+                    Email
+                  </label>
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter email e.g. officer@rescuedge.com"
-                    className="w-full pl-9 pr-4 py-2.5 bg-slate-950/40 border border-slate-800 text-xs text-white placeholder-slate-600 rounded-xl focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/30 transition-all outline-none"
+                    className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all text-sm"
+                    placeholder="Enter email"
+                    disabled={isLoading}
                   />
                 </div>
-              </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-9 pr-4 py-2.5 bg-slate-950/40 border border-slate-800 text-xs text-white placeholder-slate-600 rounded-xl focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/30 transition-all outline-none"
-                  />
+                <div>
+                  <label className="block text-slate-700 text-sm font-semibold mb-2">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3 pr-12 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all text-sm"
+                      placeholder="Enter password"
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600"
+                      disabled={isLoading}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-semibold py-3 px-4 rounded-xl text-xs transition-all shadow-xl shadow-teal-500/10 hover:shadow-teal-500/25 active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:pointer-events-none mt-6"
-              >
-                {isLoading ? (
-                  <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                ) : (
-                  <>
-                    <Key className="w-4 h-4" />
-                    <span>Authorize Access</span>
-                  </>
-                )}
-              </button>
-            </form>
-          )}
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSuccessMessage("Please contact the administrator to reset your password.");
+                      setTimeout(() => setSuccessMessage(""), 4000);
+                    }}
+                    className="text-emerald-600 text-sm hover:underline font-semibold"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
 
-          {activeTab === "signup" && (
-            <form onSubmit={handleSignUpSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Full Name</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 rounded-xl hover:shadow-xl hover:scale-[1.01] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-emerald-500/10 cursor-pointer"
+                >
+                  {isLoading ? "Signing In..." : "Login"}
+                </button>
+
+                <div className="text-center">
+                  <p className="text-slate-500 text-sm">
+                    {"Don't have an account? "}
+                    <button
+                      type="button"
+                      onClick={() => handleTabChange("signup")}
+                      className="text-emerald-600 hover:underline font-semibold cursor-pointer"
+                    >
+                      Sign up
+                    </button>
+                  </p>
+                </div>
+              </form>
+            )}
+
+            {activeTab === "signup" && (
+              <form onSubmit={handleSignUpSubmit} className="space-y-6">
+                <div>
+                  <label className="block text-slate-700 text-sm font-semibold mb-2">
+                    Full name <span className="text-slate-400 font-normal">(optional)</span>
+                  </label>
                   <input
                     type="text"
-                    required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Officer Edward"
-                    className="w-full pl-9 pr-4 py-2.5 bg-slate-950/40 border border-slate-800 text-xs text-white placeholder-slate-600 rounded-xl focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/30 transition-all outline-none"
+                    className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all text-sm"
+                    placeholder="Your full name"
+                    disabled={isLoading}
                   />
                 </div>
-              </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <div>
+                  <label className="block text-slate-700 text-sm font-semibold mb-2">
+                    Email
+                  </label>
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter email address"
-                    className="w-full pl-9 pr-4 py-2.5 bg-slate-950/40 border border-slate-800 text-xs text-white placeholder-slate-600 rounded-xl focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/30 transition-all outline-none"
+                    className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all text-sm"
+                    placeholder="you@example.com"
+                    disabled={isLoading}
                   />
                 </div>
-              </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="At least 8 characters"
-                    className="w-full pl-9 pr-4 py-2.5 bg-slate-950/40 border border-slate-800 text-xs text-white placeholder-slate-600 rounded-xl focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/30 transition-all outline-none"
-                  />
+                <div>
+                  <label className="block text-slate-700 text-sm font-semibold mb-2">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3 pr-12 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all text-sm"
+                      placeholder="Create a password"
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600"
+                      disabled={isLoading}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Password requirement indicators */}
+                  {(() => {
+                    const pwd = password || "";
+                    const checks = [
+                      { label: "1 lowercase letter", ok: /[a-z]/.test(pwd) },
+                      { label: "1 uppercase letter", ok: /[A-Z]/.test(pwd) },
+                      { label: "1 number", ok: /\d/.test(pwd) },
+                      { label: "1 special character", ok: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(pwd) },
+                    ];
+                    return (
+                      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
+                        {checks.map(({ label, ok }) => (
+                          <div key={label} className="flex items-center gap-2">
+                            <span
+                              className={`flex-shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full border-2 transition-all duration-300 ${
+                                ok
+                                  ? "border-emerald-500 bg-emerald-50"
+                                  : "border-slate-200 bg-transparent"
+                              }`}
+                            >
+                              {ok && (
+                                <svg
+                                  className="w-3 h-3 text-emerald-600"
+                                  viewBox="0 0 12 12"
+                                  fill="none"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                >
+                                  <path
+                                    d="M2 6l3 3 5-5"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              )}
+                            </span>
+                            <span
+                              className={`text-xs transition-colors duration-300 ${
+                                ok ? "text-emerald-600" : "text-slate-400"
+                              }`}
+                            >
+                              {label}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
-              </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Confirm Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <input
-                    type="password"
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm password"
-                    className="w-full pl-9 pr-4 py-2.5 bg-slate-950/40 border border-slate-800 text-xs text-white placeholder-slate-600 rounded-xl focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/30 transition-all outline-none"
-                  />
+                <div>
+                  <label className="block text-slate-700 text-sm font-semibold mb-2">
+                    Retype password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3 pr-12 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all text-sm"
+                      placeholder="Retype your password"
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600"
+                      disabled={isLoading}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-semibold py-3 px-4 rounded-xl text-xs transition-all shadow-xl shadow-teal-500/10 hover:shadow-teal-500/25 active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:pointer-events-none mt-6"
-              >
-                {isLoading ? (
-                  <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    <span>Create Control Account</span>
-                  </>
-                )}
-              </button>
-            </form>
-          )}
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl hover:shadow-xl hover:scale-[1.01] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-emerald-500/10 cursor-pointer"
+                >
+                  {isLoading ? "Creating account..." : "Sign up"}
+                </button>
 
-          {activeTab === "verify" && (
-            <form onSubmit={handleVerifySubmit} className="space-y-5 animate-fadeIn">
-              <div className="text-center pb-2">
-                <div className="w-10 h-10 rounded-full bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center mx-auto mb-3">
-                  <Mail className="w-5 h-5 text-indigo-400 animate-pulse" />
+                <div className="text-center">
+                  <p className="text-slate-500 text-sm">
+                    {"Already have an account? "}
+                    <button
+                      type="button"
+                      onClick={() => handleTabChange("signin")}
+                      className="text-emerald-600 hover:underline font-semibold cursor-pointer"
+                    >
+                      Sign in
+                    </button>
+                  </p>
                 </div>
-                <h3 className="text-sm font-bold text-white">Enter Email OTP Code</h3>
-                <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
-                  We've sent a 6-digit confirmation key to: <br/>
-                  <span className="text-teal-400 font-semibold">{verifyingEmail}</span>
-                </p>
-              </div>
+              </form>
+            )}
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Verification OTP Code</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            {activeTab === "verify" && (
+              <form onSubmit={handleVerifySubmit} className="space-y-6">
+                <div>
+                  <label className="block text-slate-700 text-sm font-semibold mb-2">
+                    Verification OTP Code
+                  </label>
                   <input
                     type="text"
                     maxLength={6}
                     required
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
-                    placeholder="Enter 6-digit code"
-                    className="w-full pl-9 pr-4 py-2.5 bg-slate-950/40 border border-slate-800 text-xs font-mono text-center tracking-[0.4em] text-teal-400 placeholder-slate-700 placeholder:tracking-normal rounded-xl focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/30 transition-all outline-none"
+                    className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3 text-center tracking-[0.4em] font-mono text-lg text-emerald-600 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    placeholder="000000"
+                    disabled={isLoading}
                   />
                 </div>
-              </div>
 
-              <div className="flex gap-3 mt-6">
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange("signin")}
+                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    disabled={isLoading}
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="flex-[2] bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl hover:shadow-xl hover:scale-[1.01] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-emerald-500/10 cursor-pointer"
+                  >
+                    {isLoading ? "Verifying..." : "Verify Code"}
+                  </button>
+                </div>
+
                 <button
                   type="button"
-                  onClick={() => handleTabChange("signin")}
-                  className="flex-1 flex items-center justify-center gap-1.5 bg-slate-950/60 border border-slate-800 hover:bg-slate-900 text-slate-400 hover:text-slate-200 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  Back
-                </button>
-                <button
-                  type="submit"
+                  onClick={handleResendOtp}
                   disabled={isLoading}
-                  className="flex-[2] flex items-center justify-center gap-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-semibold py-2.5 px-4 rounded-xl text-xs transition-all shadow-xl shadow-teal-500/10 hover:shadow-teal-500/25 active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+                  className="w-full text-center text-xs text-emerald-600 hover:underline font-semibold cursor-pointer"
                 >
-                  {isLoading ? (
-                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>Verify Account</span>
-                    </>
-                  )}
+                  Resend Code to Mailbox
                 </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleResendOtp}
-                disabled={isLoading}
-                className="w-full text-center text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer underline underline-offset-2 flex items-center justify-center gap-1 mt-2 hover:scale-[1.01] transition-transform"
-              >
-                <Send className="w-2.5 h-2.5" />
-                Resend Code to Mailbox
-              </button>
-            </form>
-          )}
+              </form>
+            )}
+          </div>
         </div>
-
-        {/* Collapsible Developer Helper Panel */}
-        <div className="mt-4 animate-fadeIn">
-          <button
-            onClick={() => setShowDevHelp(!showDevHelp)}
-            className="w-full flex items-center justify-center gap-1 text-slate-600 hover:text-slate-400 text-[10px] font-semibold transition-colors cursor-pointer bg-slate-950/10 py-2 rounded-xl border border-slate-800/20"
-          >
-            <HelpCircle className="w-3 h-3" />
-            <span>AWS Cognito Client Flow Status</span>
-            {showDevHelp ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />}
-          </button>
-
-          {showDevHelp && (
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 mt-2.5 space-y-3.5 text-xs shadow-xl animate-fadeIn duration-200">
-              <div className="border-b border-slate-800/60 pb-1.5 flex items-center justify-between">
-                <span className="font-semibold text-slate-400 text-[11px]">Direct SDK Settings</span>
-                <span className="text-[8px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded px-1 font-bold uppercase">SDK Mode</span>
-              </div>
-              <p className="text-slate-400 text-[10px] leading-relaxed">
-                Auth is now fully client-secret hashed and flows securely from your local server side directly to AWS endpoints. Redirection mismatch issues are completely avoided!
-              </p>
-              <div className="space-y-1">
-                <h5 className="font-semibold text-[10px] text-slate-300">Target Active Credentials:</h5>
-                <ul className="list-disc pl-4 space-y-0.5 text-[10px] text-slate-500 font-mono">
-                  <li>Client ID: <span className="text-slate-400">4epahff...</span></li>
-                  <li>Pool Region: <span className="text-slate-400">us-east-1</span></li>
-                </ul>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="mt-6 text-center text-[9px] text-slate-600 flex items-center justify-center gap-1 pointer-events-none">
-          <Globe className="w-2.5 h-2.5" />
-          <span>RescuEdge Surveillance Network Control.</span>
-        </div>
-
       </div>
     </div>
   );
 }
+
