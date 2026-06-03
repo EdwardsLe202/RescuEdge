@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useSession, signOut } from "next-auth/react";
 import {
   LayoutDashboard,
   Video,
@@ -10,6 +11,7 @@ import {
   MapPin,
   Plus,
   Settings,
+  LogOut,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -37,6 +39,18 @@ export default function Sidebar({
   onAddNewLocation,
   onAddNewCamera,
 }: SidebarProps) {
+  const { data: session } = useSession();
+
+  // Get user name and dynamic avatar initials
+  const userName = session?.user?.name || "Officer";
+  const userEmail = session?.user?.email || "officer@rescuedge.com";
+  const initials = userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .substring(0, 2)
+    .toUpperCase();
+
   return (
     <aside className="w-64 border-r border-gray-100 flex flex-col justify-between bg-white/40 backdrop-blur-md hidden lg:flex shrink-0">
       {/* Upper menu navigation elements */}
@@ -144,18 +158,27 @@ export default function Sidebar({
       {/* Profile Panel at the Bottom */}
       <div className="p-4 border-t border-gray-100 bg-white/30 shrink-0">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center font-bold text-indigo-600 border border-indigo-200/50">
-              PP
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center font-bold text-indigo-600 border border-indigo-200/50 shrink-0">
+              {initials}
             </div>
-            <div>
-              <h4 className="text-xs font-semibold text-gray-800 leading-tight">Pearl Plaha</h4>
-              <span className="text-[10px] text-gray-400 font-medium">Head of Safety</span>
+            <div className="min-w-0">
+              <h4 className="text-xs font-semibold text-gray-800 leading-tight truncate">{userName}</h4>
+              <span className="text-[10px] text-gray-400 font-medium truncate block">{userEmail}</span>
             </div>
           </div>
-          <button className="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
-            <Settings className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button className="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
+              <Settings className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="w-7 h-7 rounded-lg hover:bg-red-50 hover:text-red-500 flex items-center justify-center text-gray-400 transition-colors cursor-pointer"
+              title="Sign Out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </aside>
