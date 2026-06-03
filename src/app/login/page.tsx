@@ -10,8 +10,8 @@ export default function LoginPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   
-  // Navigation Tabs & Stage State: "signin" | "signup" | "verify"
-  const [activeTab, setActiveTab] = useState<"signin" | "signup" | "verify">("signin");
+  // Navigation Tabs & Stage State: "signin" | "signup" | "verify" | "forgot" | "reset"
+  const [activeTab, setActiveTab] = useState<"signin" | "signup" | "verify" | "forgot" | "reset">("signin");
   
   // Form Fields States
   const [email, setEmail] = useState("");
@@ -37,15 +37,18 @@ export default function LoginPage() {
   }, [status, router]);
 
   // Reset errors and successes when switching tabs
-  const handleTabChange = (tab: "signin" | "signup" | "verify") => {
+  const handleTabChange = (tab: "signin" | "signup" | "verify" | "forgot" | "reset") => {
     setActiveTab(tab);
     setErrorMessage("");
     setSuccessMessage("");
     setOtpCode("");
-    if (tab !== "verify") {
+    if (tab === "signin" || tab === "signup" || tab === "forgot") {
       setEmail("");
       setPassword("");
       setName("");
+      setConfirmPassword("");
+    } else if (tab === "reset") {
+      setPassword("");
       setConfirmPassword("");
     }
   };
@@ -229,6 +232,120 @@ export default function LoginPage() {
     }
   };
 
+  // Forgot Password submit handler
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      setErrorMessage("Please enter your email address.");
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to send reset code.");
+      }
+
+      setVerifyingEmail(email);
+      setSuccessMessage("A password reset code has been sent to your email.");
+      
+      setTimeout(() => {
+        handleTabChange("reset");
+        setIsLoading(false);
+      }, 2000);
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to send reset code.");
+      setIsLoading(false);
+    }
+  };
+
+  // Reset Password submit handler
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!otpCode || !password || !confirmPassword) {
+      setErrorMessage("Please fill in all fields.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMessage("Passwords do not match.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setErrorMessage("Password must be at least 8 characters long.");
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    try {
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: verifyingEmail, code: otpCode, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to reset password. Check the code.");
+      }
+
+      setSuccessMessage("Password reset successfully! You can now log in with your new password.");
+
+      setTimeout(() => {
+        handleTabChange("signin");
+        setEmail(verifyingEmail);
+        setIsLoading(false);
+      }, 2000);
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to reset password.");
+      setIsLoading(false);
+    }
+  };
+
+  // Resend reset code handler
+  const handleResendResetOtp = async () => {
+    setIsLoading(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: verifyingEmail }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to resend code.");
+      }
+
+      setSuccessMessage("A fresh password reset code has been sent to your email.");
+      setIsLoading(false);
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to resend code.");
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="h-screen relative flex flex-col md:flex-row overflow-hidden font-sans">
       {/* Background: dark slate on left, white on right */}
@@ -251,13 +368,25 @@ export default function LoginPage() {
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-extrabold text-slate-900 mb-2">
-              {activeTab === "signin" ? "Login" : activeTab === "signup" ? "Create account" : "Verify Email"}
+              {activeTab === "signin"
+                ? "Login"
+                : activeTab === "signup"
+                ? "Create account"
+                : activeTab === "forgot"
+                ? "Reset password"
+                : activeTab === "reset"
+                ? "Set new password"
+                : "Verify Email"}
             </h1>
             <p className="text-slate-500 text-sm">
               {activeTab === "signin"
                 ? "Sign in to access your control panel"
                 : activeTab === "signup"
                 ? "Start your rescue coordination session"
+                : activeTab === "forgot"
+                ? "Enter your email to receive a password reset code"
+                : activeTab === "reset"
+                ? `Enter the reset code sent to ${verifyingEmail}`
                 : `Enter the verification code sent to ${verifyingEmail}`}
             </p>
           </div>
@@ -324,11 +453,9 @@ export default function LoginPage() {
                 <div className="text-right">
                   <button
                     type="button"
-                    onClick={() => {
-                      setSuccessMessage("Please contact the administrator to reset your password.");
-                      setTimeout(() => setSuccessMessage(""), 4000);
-                    }}
-                    className="text-emerald-600 text-sm hover:underline font-semibold"
+                    onClick={() => handleTabChange("forgot")}
+                    className="text-emerald-600 text-sm hover:underline font-semibold cursor-pointer"
+                    disabled={isLoading}
                   >
                     Forgot password?
                   </button>
@@ -559,6 +686,200 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={handleResendOtp}
+                  disabled={isLoading}
+                  className="w-full text-center text-xs text-emerald-600 hover:underline font-semibold cursor-pointer"
+                >
+                  Resend Code to Mailbox
+                </button>
+              </form>
+            )}
+
+            {activeTab === "forgot" && (
+              <form onSubmit={handleForgotPasswordSubmit} className="space-y-6">
+                <div>
+                  <label className="block text-slate-700 text-sm font-semibold mb-2">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all text-sm"
+                    placeholder="Enter your email"
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange("signin")}
+                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    disabled={isLoading}
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="flex-[2] bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl hover:shadow-xl hover:scale-[1.01] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-emerald-500/10 cursor-pointer"
+                  >
+                    {isLoading ? "Sending..." : "Send Reset Code"}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {activeTab === "reset" && (
+              <form onSubmit={handleResetPasswordSubmit} className="space-y-6">
+                <div>
+                  <label className="block text-slate-700 text-sm font-semibold mb-2">
+                    Verification OTP Code
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    required
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                    className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3 text-center tracking-[0.4em] font-mono text-lg text-emerald-600 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    placeholder="000000"
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 text-sm font-semibold mb-2">
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3 pr-12 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all text-sm"
+                      placeholder="Enter new password"
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600"
+                      disabled={isLoading}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Password requirement indicators */}
+                  {(() => {
+                    const pwd = password || "";
+                    const checks = [
+                      { label: "1 lowercase letter", ok: /[a-z]/.test(pwd) },
+                      { label: "1 uppercase letter", ok: /[A-Z]/.test(pwd) },
+                      { label: "1 number", ok: /\d/.test(pwd) },
+                      { label: "1 special character", ok: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(pwd) },
+                    ];
+                    return (
+                      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
+                        {checks.map(({ label, ok }) => (
+                          <div key={label} className="flex items-center gap-2">
+                            <span
+                              className={`flex-shrink-0 inline-flex items-center justify-center w-5 h-5 rounded-full border-2 transition-all duration-300 ${
+                                ok
+                                  ? "border-emerald-500 bg-emerald-50"
+                                  : "border-slate-200 bg-transparent"
+                              }`}
+                            >
+                              {ok && (
+                                <svg
+                                  className="w-3 h-3 text-emerald-600"
+                                  viewBox="0 0 12 12"
+                                  fill="none"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                >
+                                  <path
+                                    d="M2 6l3 3 5-5"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              )}
+                            </span>
+                            <span
+                              className={`text-xs transition-colors duration-300 ${
+                                ok ? "text-emerald-600" : "text-slate-400"
+                              }`}
+                            >
+                              {label}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 text-sm font-semibold mb-2">
+                    Retype new password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full bg-white border-2 border-slate-200 rounded-xl px-4 py-3 pr-12 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all text-sm"
+                      placeholder="Retype new password"
+                      disabled={isLoading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600"
+                      disabled={isLoading}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange("forgot")}
+                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    disabled={isLoading}
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="flex-[2] bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl hover:shadow-xl hover:scale-[1.01] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-emerald-500/10 cursor-pointer"
+                  >
+                    {isLoading ? "Resetting..." : "Reset Password"}
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleResendResetOtp}
                   disabled={isLoading}
                   className="w-full text-center text-xs text-emerald-600 hover:underline font-semibold cursor-pointer"
                 >
