@@ -17,9 +17,9 @@ export default function Header({ searchQuery, setSearchQuery }: HeaderProps) {
         <Image
           src="/images/logo.png"
           alt="RescuEdge Logo"
-          width={240}
-          height={60}
-          className="object-contain max-h-14"
+          width={1093}
+          height={379}
+          className="h-12 w-auto object-contain"
           priority
         />
       </div>

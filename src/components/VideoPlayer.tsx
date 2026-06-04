@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useState, useEffect } from "react";
+import ReactPlayer from "react-player";
 import {
   Play,
   Pause,
@@ -10,7 +11,8 @@ import {
   VolumeX,
   Maximize,
   Settings,
-  MessageSquare,
+  VideoOff,
+  Tv,
 } from "lucide-react";
 
 interface VideoPlayerProps {
@@ -19,14 +21,13 @@ interface VideoPlayerProps {
   currentTime: number;
   setCurrentTime: (time: number | ((prev: number) => number)) => void;
   duration: number;
+  setDuration: (duration: number) => void;
   playbackSpeed: number;
   setPlaybackSpeed: (speed: number) => void;
   isMuted: boolean;
   setIsMuted: (muted: boolean) => void;
   volume: number;
   setVolume: (vol: number) => void;
-  canvasRef: React.RefObject<HTMLCanvasElement | null>;
-  formatTime: (time: number) => string;
   streamUrl?: string | null;
   mode?: string;
   cameraEnabled?: boolean;
@@ -41,14 +42,13 @@ export default function VideoPlayer({
   currentTime,
   setCurrentTime,
   duration,
+  setDuration,
   playbackSpeed,
   setPlaybackSpeed,
   isMuted,
   setIsMuted,
   volume,
   setVolume,
-  canvasRef,
-  formatTime,
   streamUrl,
   mode,
   cameraEnabled,
@@ -56,221 +56,387 @@ export default function VideoPlayer({
   onUpdateDesiredState,
   isUpdatingDesiredState,
 }: VideoPlayerProps) {
+  const playerRef = useRef<HTMLVideoElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // Hydration state
+  const [hasMounted, setHasMounted] = useState(false);
+
+  // Controls auto-hide UI state
+  const [showControls, setShowControls] = useState(true);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Simulation mode state
+  const [isSimulationMode, setIsSimulationMode] = useState(false);
+
+  // Reset simulation when device/streamUrl changes
+  useEffect(() => {
+    setIsSimulationMode(false);
+  }, [streamUrl]);
+
+  const handleMouseMove = () => {
+    setShowControls(true);
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+    }
+    controlsTimeoutRef.current = setTimeout(() => {
+      if (isPlaying) {
+        setShowControls(false);
+      }
+    }, 3000);
+  };
+
+  useEffect(() => {
+    setHasMounted(true);
+    return () => {
+      if (controlsTimeoutRef.current) {
+        clearTimeout(controlsTimeoutRef.current);
+      }
+    };
+  }, [isPlaying]);
+
+  // Handle parent-driven seek triggers (e.g. from TimelineFlow)
+  useEffect(() => {
+    if (playerRef.current && Math.abs(playerRef.current.currentTime - currentTime) > 1.5) {
+      playerRef.current.currentTime = currentTime;
+    }
+  }, [currentTime]);
+
+  const isVideoUrl = (url?: string | null) => {
+    if (!url) return false;
+    return (
+      url.includes(".mp4") ||
+      url.includes(".m3u8") ||
+      url.includes("youtube.com") ||
+      url.includes("vimeo.com")
+    );
+  };
+
+  const videoSource = isVideoUrl(streamUrl)
+    ? streamUrl!
+    : "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"; // Fallback premium demo video
+
+  const handlePlayPause = () => {
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    setCurrentTime(time);
+    if (playerRef.current) {
+      playerRef.current.currentTime = time;
+    }
+  };
+
+  const handleRewind = () => {
+    const target = Math.max(0, currentTime - 10);
+    setCurrentTime(target);
+    if (playerRef.current) {
+      playerRef.current.currentTime = target;
+    }
+  };
+
+  const handleForward = () => {
+    const target = Math.min(duration, currentTime + 10);
+    setCurrentTime(target);
+    if (playerRef.current) {
+      playerRef.current.currentTime = target;
+    }
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseFloat(e.target.value);
+    setVolume(val);
+    setIsMuted(val === 0);
+  };
+
+  const handleToggleMute = () => {
+    setIsMuted(!isMuted);
+  };
+
+  const handleFullscreen = () => {
+    const container = containerRef.current;
+    if (container) {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        container.requestFullscreen().catch((err) => {
+          console.error("Error attempting to enable full-screen mode:", err);
+        });
+      }
+    }
+  };
+
+  const formatTime = (timeInSecs: number) => {
+    const hrs = Math.floor(timeInSecs / 3600);
+    const mins = Math.floor((timeInSecs % 3600) / 60);
+    const secs = Math.floor(timeInSecs % 60);
+    
+    const displayMins = mins < 10 ? `0${mins}` : mins;
+    const displaySecs = secs < 10 ? `0${secs}` : secs;
+
+    if (hrs > 0) {
+      return `${hrs}:${displayMins}:${displaySecs}`;
+    }
+    return `${displayMins}:${displaySecs}`;
+  };
+
+  if (!hasMounted) {
+    return (
+      <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-lg flex flex-col mb-6">
+        <div className="relative aspect-video max-h-[500px] w-full rounded-2xl bg-[#09090e] overflow-hidden flex items-center justify-center">
+          <span className="text-sm text-gray-400 font-medium animate-pulse">Initializing Player...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-lg flex flex-col mb-6">
       
-      {/* Security Stream Monitor Display */}
-      <div className="relative aspect-video max-h-[500px] w-full rounded-2xl bg-[#1e1e2e] border border-gray-800/20 overflow-hidden flex items-center justify-center shadow-inner group">
-        
-        {/* Render Live Stream Image if available, otherwise fallback to simulated Canvas */}
-        {streamUrl ? (
-          <img
-            src={streamUrl}
-            alt="Live Camera Feed"
-            className="w-full h-full object-contain object-center max-h-[500px]"
-          />
-        ) : (
-          <canvas
-            ref={canvasRef}
-            width={560}
-            height={380}
-            className="w-full h-full object-cover object-center max-h-[500px]"
-          />
-        )}
+      {/* ReactPlayer Container */}
+      <div
+        ref={containerRef}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => isPlaying && setShowControls(false)}
+        className="relative aspect-video max-h-[500px] w-full rounded-2xl bg-[#09090e] overflow-hidden flex items-center justify-center shadow-inner group"
+      >
+        {!streamUrl && !isSimulationMode ? (
+          <div className="absolute inset-0 bg-[#09090e] flex flex-col items-center justify-center p-6 text-center select-none z-20">
+            {/* Ambient glow */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-        {/* Bounding box display (only when canvas is fallback/simulated) */}
-        {!streamUrl && (
-          <div className="absolute top-[48%] left-[62.5%] -translate-y-1/2 -translate-x-1/2 w-[16%] h-[25%] pointer-events-none border-2 border-red-500 rounded animate-glow-red flex flex-col items-start p-1 transition-all duration-300">
-            <span className="text-[8px] md:text-[10px] font-black font-mono tracking-wide text-white bg-red-600 px-1 py-0.5 rounded shadow">
-              PISTOL 95.1%
-            </span>
-          </div>
-        )}
-
-        {/* Overlaid Pulsing Live Signal Badge */}
-        <div className="absolute top-4 right-4 flex items-center gap-2 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full border border-white/20 shadow-md">
-          <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse-live"></span>
-          <span className="text-[10px] md:text-xs font-bold text-white font-mono tracking-wider">
-            {streamUrl ? "REAL STREAM ACTIVE" : "SIMULATED STREAM"}
-          </span>
-        </div>
-
-        {/* Center overlay controls triggered on hover */}
-        {!streamUrl && (
-          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-8 pointer-events-none">
+            <div className="relative z-10 flex flex-col items-center max-w-sm">
+              <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 mb-4 shadow-xl backdrop-blur-md">
+                <VideoOff className="w-8 h-8 text-indigo-400" />
+              </div>
+              
+              <h3 className="text-lg font-bold text-white mb-2 tracking-tight">
+                No Live Stream Signal
+              </h3>
+              
+              <p className="text-xs text-gray-400 mb-6 leading-relaxed">
+                This camera device is currently offline or does not have an active live S3 video stream feed.
+              </p>
+              
+              <button
+                onClick={() => {
+                  setIsSimulationMode(true);
+                  setIsPlaying(true);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold border border-indigo-400/30 flex items-center gap-2 cursor-pointer shadow-lg shadow-indigo-600/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+              >
+                <Tv className="w-4 h-4" />
+                Activate Simulation Feed
+              </button>
+            </div>
             
-            {/* Skip backward 10s */}
-            <button
-              onClick={() => setCurrentTime((prev) => Math.max(0, (typeof prev === "number" ? prev : currentTime) - 10))}
-              className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md text-white border border-white/20 flex items-center justify-center transition-transform hover:scale-105 cursor-pointer pointer-events-auto shadow-lg"
-              title="-10 Seconds"
-            >
-              <RotateCcw className="w-5 h-5" />
-            </button>
-
-            {/* Master Play/Pause toggler */}
-            <button
-              onClick={() => setIsPlaying(!isPlaying)}
-              className="w-16 h-16 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center shadow-2xl transition-transform hover:scale-105 cursor-pointer pointer-events-auto border border-indigo-400"
-              title={isPlaying ? "Pause Feed" : "Start Playback"}
-            >
-              {isPlaying ? <Pause className="w-7 h-7 fill-current" /> : <Play className="w-7 h-7 fill-current translate-x-0.5" />}
-            </button>
-
-            {/* Skip forward 10s */}
-            <button
-              onClick={() => setCurrentTime((prev) => Math.min(duration, (typeof prev === "number" ? prev : currentTime) + 10))}
-              className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md text-white border border-white/20 flex items-center justify-center transition-transform hover:scale-105 cursor-pointer pointer-events-auto shadow-lg"
-              title="+10 Seconds"
-            >
-              <RotateCw className="w-5 h-5" />
-            </button>
-
+            <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center text-[10px] text-gray-500 font-mono tracking-wider">
+              <span>STATUS: INACTIVE</span>
+              <span>FEED: NULL</span>
+            </div>
           </div>
-        )}
+        ) : (
+          <>
+            <ReactPlayer
+              ref={playerRef}
+              src={videoSource}
+              playing={isPlaying}
+              volume={isMuted ? 0 : volume}
+              muted={isMuted}
+              playbackRate={playbackSpeed}
+              width="100%"
+              height="100%"
+              controls={false}
+              onTimeUpdate={(e) => {
+                setCurrentTime(e.currentTarget.currentTime);
+              }}
+              onDurationChange={(e) => {
+                setDuration(e.currentTarget.duration);
+              }}
+              className="pointer-events-none"
+            />
 
-        {/* Time overlay for simulated canvas */}
-        {!streamUrl && (
-          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1 bg-black/60 rounded-full border border-white/10 text-[11px] text-white/80 font-mono tracking-wide pointer-events-none">
-            <span>Frame Time:</span>
-            <span className="text-yellow-400 font-bold font-mono">{formatTime(currentTime)}</span>
-            <span>/</span>
-            <span>{formatTime(duration)}</span>
-          </div>
+            {/* Play/Pause overlay */}
+            <div
+              onClick={handlePlayPause}
+              className={`absolute inset-0 bg-black/40 flex items-center justify-center gap-8 cursor-pointer transition-opacity duration-300 ${
+                showControls ? "opacity-100" : "opacity-0 pointer-events-none"
+              }`}
+            >
+              <button
+                onClick={(e) => { e.stopPropagation(); handleRewind(); }}
+                className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/10 flex items-center justify-center transition-transform hover:scale-105 cursor-pointer"
+                title="-10 Seconds"
+              >
+                <RotateCcw className="w-5 h-5" />
+              </button>
+
+              <button
+                onClick={(e) => { e.stopPropagation(); handlePlayPause(); }}
+                className="w-16 h-16 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center shadow-2xl transition-transform hover:scale-105 border border-indigo-400 cursor-pointer"
+              >
+                {isPlaying ? <Pause className="w-7 h-7 fill-current" /> : <Play className="w-7 h-7 fill-current translate-x-0.5" />}
+              </button>
+
+              <button
+                onClick={(e) => { e.stopPropagation(); handleForward(); }}
+                className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/10 flex items-center justify-center transition-transform hover:scale-105 cursor-pointer"
+                title="+10 Seconds"
+              >
+                <RotateCw className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Live Signal Badge */}
+            <div className="absolute top-4 right-4 flex items-center gap-2 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full border border-white/20 shadow-md">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse-live"></span>
+              <span className="text-[10px] md:text-xs font-bold text-white font-mono tracking-wider">
+                {isVideoUrl(streamUrl) ? "LIVE STREAM ACTIVE" : "PLAYBACK SIMULATION"}
+              </span>
+            </div>
+
+            {/* Bottom Control Bar Overlay */}
+            <div
+              className={`absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/85 via-black/45 to-transparent transition-transform duration-300 flex flex-col gap-3 ${
+                showControls ? "translate-y-0" : "translate-y-full"
+              }`}
+            >
+              {/* Scrub bar */}
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-semibold text-white font-mono select-none">
+                  {formatTime(currentTime)}
+                </span>
+                
+                <div className="flex-1 relative py-3 cursor-pointer group select-none">
+                  {/* Custom Track Background */}
+                  <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-white/20 rounded-full overflow-hidden">
+                    {/* Custom Track Progress */}
+                    <div 
+                      className="h-full bg-indigo-500 rounded-full transition-all duration-75"
+                      style={{ width: `${(currentTime / (duration || 100)) * 100}%` }}
+                    />
+                  </div>
+                  {/* Custom Thumb dot */}
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-white border border-indigo-600 shadow-[0_0_10px_rgba(99,102,241,0.8)] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ left: `calc(${(currentTime / (duration || 100)) * 100}% - 7px)` }}
+                  />
+                  {/* Invisible native range input on top */}
+                  <input
+                    type="range"
+                    min={0}
+                    max={duration || 100}
+                    value={currentTime}
+                    onChange={handleSeekChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  />
+                </div>
+
+                <span className="text-xs font-semibold text-white font-mono select-none">
+                  {formatTime(duration)}
+                </span>
+              </div>
+
+              {/* Controls buttons row */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4 text-white">
+                  <button
+                    onClick={handlePlayPause}
+                    className="hover:text-indigo-400 transition-colors cursor-pointer"
+                  >
+                    {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current" />}
+                  </button>
+
+                  <button
+                    onClick={handleRewind}
+                    className="hover:text-indigo-400 transition-colors cursor-pointer"
+                    title="-10s"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    onClick={handleForward}
+                    className="hover:text-indigo-400 transition-colors cursor-pointer"
+                    title="+10s"
+                  >
+                    <RotateCw className="w-4 h-4" />
+                  </button>
+
+                  <div className="flex items-center gap-2 group/volume">
+                    <button
+                      onClick={handleToggleMute}
+                      className="hover:text-indigo-400 transition-colors cursor-pointer"
+                    >
+                      {isMuted || volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                    </button>
+                    
+                    {/* Volume slider container */}
+                    <div className="relative w-16 h-6 flex items-center cursor-pointer opacity-0 group-hover/volume:opacity-100 transition-opacity duration-200 select-none">
+                      {/* Custom Track Background */}
+                      <div className="absolute left-0 right-0 h-1 bg-white/20 rounded-full overflow-hidden">
+                        {/* Custom Track Progress */}
+                        <div 
+                          className="h-full bg-indigo-500 rounded-full"
+                          style={{ width: `${(isMuted ? 0 : volume) * 100}%` }}
+                        />
+                      </div>
+                      {/* Custom Thumb dot */}
+                      <div 
+                        className="absolute w-2.5 h-2.5 rounded-full bg-white border border-indigo-600 shadow pointer-events-none"
+                        style={{ left: `calc(${(isMuted ? 0 : volume) * 100}% - 5px)` }}
+                      />
+                      {/* Invisible native range input */}
+                      <input
+                        type="range"
+                        min={0}
+                        max={1}
+                        step={0.05}
+                        value={isMuted ? 0 : volume}
+                        onChange={handleVolumeChange}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-5 text-white">
+                  {/* Playback speed rate */}
+                  <div className="flex items-center gap-1 bg-white/10 rounded-lg p-0.5 border border-white/10">
+                    {[1.0, 1.25, 1.5, 2.0].map((speed) => (
+                      <button
+                        key={speed}
+                        onClick={() => setPlaybackSpeed(speed)}
+                        className={`px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
+                          playbackSpeed === speed
+                            ? "bg-indigo-600 text-white shadow font-black"
+                            : "text-white/60 hover:text-white"
+                        }`}
+                      >
+                        {speed}x
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={handleFullscreen}
+                    className="hover:text-indigo-400 transition-colors cursor-pointer"
+                    title="Fullscreen"
+                  >
+                    <Maximize className="w-5 h-5" />
+                  </button>
+
+                  <button className="hover:text-indigo-400 transition-colors cursor-pointer">
+                    <Settings className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
         )}
 
       </div>
-
-      {/* MEDIA TIMELINE & CONTROL BAR (Only for simulation mode) */}
-      {!streamUrl && (
-        <div className="mt-5 space-y-4">
-          
-          {/* Dynamic scrub bar slider */}
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-semibold text-gray-500 font-mono select-none">
-              {formatTime(currentTime)}
-            </span>
-            
-            {/* Slider Container */}
-            <div className="flex-1 relative py-2 cursor-pointer group">
-              <input
-                type="range"
-                min={0}
-                max={duration}
-                value={currentTime}
-                onChange={(e) => setCurrentTime(Number(e.target.value))}
-                className="w-full h-1.5 bg-gray-150 rounded-lg appearance-none cursor-pointer accent-indigo-600 focus:outline-none transition-all outline-none"
-              />
-              {/* Glowing tracking dot */}
-              <div
-                className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-indigo-600 border border-white shadow-md pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
-                style={{ left: `calc(${(currentTime / duration) * 100}% - 7px)` }}
-              ></div>
-            </div>
-
-            <span className="text-xs font-semibold text-gray-500 font-mono select-none">
-              {formatTime(duration)}
-            </span>
-          </div>
-
-          {/* Bottom Control Bar Layout */}
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-1 border-t border-gray-100">
-            
-            {/* Play & seek buttons group */}
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setIsPlaying(!isPlaying)}
-                className="w-9 h-9 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-600 flex items-center justify-center transition-colors cursor-pointer"
-                title={isPlaying ? "Pause" : "Play"}
-              >
-                {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current translate-x-0.5" />}
-              </button>
-              
-              <button
-                onClick={() => setCurrentTime((prev) => Math.max(0, (typeof prev === "number" ? prev : currentTime) - 10))}
-                className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-500 flex items-center justify-center transition-colors cursor-pointer"
-                title="-10 seconds"
-              >
-                <RotateCcw className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={() => setCurrentTime((prev) => Math.min(duration, (typeof prev === "number" ? prev : currentTime) + 10))}
-                className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-500 flex items-center justify-center transition-colors cursor-pointer"
-                title="+10 seconds"
-              >
-                <RotateCw className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Playback rate multiplier toggle */}
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-1 bg-gray-50 border border-gray-200/50 rounded-lg p-0.5">
-                {[1.0, 1.25, 1.5].map((speed) => (
-                  <button
-                    key={speed}
-                    onClick={() => setPlaybackSpeed(speed)}
-                    className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-all cursor-pointer ${
-                      playbackSpeed === speed
-                        ? "bg-white text-indigo-600 shadow-sm border border-gray-200/50 font-black"
-                        : "text-gray-500 hover:text-gray-900"
-                    }`}
-                  >
-                    {speed}x
-                  </button>
-                ))}
-              </div>
-
-              {/* Mute and volume slider elements */}
-              <div className="flex items-center gap-2 group/volume">
-                <button
-                  onClick={() => setIsMuted(!isMuted)}
-                  className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-500 flex items-center justify-center transition-colors cursor-pointer"
-                  title={isMuted ? "Unmute" : "Mute"}
-                >
-                  {isMuted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                </button>
-                
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={isMuted ? 0 : volume}
-                  onChange={(e) => {
-                    setVolume(Number(e.target.value));
-                    setIsMuted(false);
-                  }}
-                  className="w-16 md:w-20 h-1 bg-gray-200 accent-indigo-600 rounded-lg appearance-none cursor-pointer outline-none opacity-50 group-hover/volume:opacity-100 transition-opacity"
-                />
-              </div>
-            </div>
-
-            {/* Full screen indicator trigger */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  const canvas = canvasRef.current;
-                  if (canvas) {
-                    if (canvas.requestFullscreen) {
-                      canvas.requestFullscreen();
-                    }
-                  }
-                }}
-                className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-500 flex items-center justify-center transition-colors cursor-pointer"
-                title="Fullscreen canvas"
-              >
-                <Maximize className="w-4 h-4" />
-              </button>
-              
-              <button className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-500 flex items-center justify-center transition-colors cursor-pointer">
-                <Settings className="w-4 h-4" />
-              </button>
-            </div>
-
-          </div>
-
-        </div>
-      )}
 
       {/* DEVICE SHADOW CONTROL PANEL */}
       {onUpdateDesiredState && (
