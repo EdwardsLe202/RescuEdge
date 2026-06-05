@@ -521,14 +521,28 @@ export default function Home() {
           />
         )}
 
-        {/* Floater arrow button to open the comments log if collapsed */}
+        {/* Desktop: Floater arrow button to open the comments log if collapsed */}
         {activeMenu === "dashboard" && !isCommentsOpen && (
           <button
             onClick={() => setIsCommentsOpen(true)}
-            className="absolute right-4 top-4 z-40 w-10 h-10 rounded-full bg-white hover:bg-gray-50 text-indigo-600 shadow-xl border border-indigo-100 flex items-center justify-center cursor-pointer hover:scale-105 transition-all"
+            className="hidden md:flex absolute right-4 top-4 z-40 w-10 h-10 rounded-full bg-white hover:bg-gray-50 text-indigo-600 shadow-xl border border-indigo-100 items-center justify-center cursor-pointer hover:scale-105 transition-all"
             title="Expand comments panel"
           >
             <MessageSquare className="w-5 h-5 text-indigo-600 animate-pulse" />
+          </button>
+        )}
+
+        {/* Mobile: FAB to open comments bottom sheet */}
+        {activeMenu === "dashboard" && (
+          <button
+            onClick={() => setIsCommentsOpen(true)}
+            className={`fixed bottom-6 right-5 z-30 md:hidden flex items-center gap-2 bg-[#004d56] text-white shadow-2xl rounded-full px-4 py-3 text-xs font-bold transition-all duration-300 ${
+              isCommentsOpen ? "opacity-0 pointer-events-none scale-90" : "opacity-100 scale-100"
+            }`}
+            aria-label="Mở bình luận"
+          >
+            <MessageSquare className="w-4 h-4" />
+            {t("commentsLogs")}
           </button>
         )}
       </div>
