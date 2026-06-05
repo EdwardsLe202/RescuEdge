@@ -63,21 +63,9 @@ export default function CommentsSidebar({
             <p className="text-xs text-slate-400 font-medium">{t("noCommentsYet")}</p>
           </div>
         ) : (
-          comments.map((comment) => {
-            const isMock = ["1", "2", "3"].includes(comment.id);
-            const displayRole = isMock 
-              ? (comment.id === "1" ? t("forensicRole") : t("investigationRole"))
-              : comment.role;
-            const displayContent = isMock
-              ? t(`commentContent${comment.id}`)
-              : comment.content;
-            const displayTimestamp = isMock
-              ? t(`commentTime${comment.id}`)
-              : comment.timestamp;
+          comments.map((comment) => (
+            <div key={comment.id} className="space-y-1.5 animate-fadeIn group">
 
-            return (
-              <div key={comment.id} className="space-y-1.5 animate-fadeIn group">
-              
               {/* Top user profile bar */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -90,7 +78,7 @@ export default function CommentsSidebar({
                       {comment.author}
                     </h4>
                     <span className="text-[9px] text-slate-400 block font-medium">
-                      {displayRole}
+                      {comment.role}
                     </span>
                   </div>
                 </div>
@@ -98,28 +86,21 @@ export default function CommentsSidebar({
 
               {/* Comment Bubble text box content */}
               <div className={`p-3 rounded-xl text-xs leading-relaxed shadow-sm border ${
-                comment.isTagged 
-                  ? "bg-emerald-50/70 border-emerald-100/80 text-[#004d56] font-semibold" 
+                comment.isTagged
+                  ? "bg-emerald-50/70 border-emerald-100/80 text-[#004d56] font-semibold"
                   : "bg-slate-50/50 border-slate-100 text-slate-600"
               }`}>
-                {displayContent.includes("@AbhaySalvi") ? (
-                  <span>
-                    <span className="text-[#004d56] font-bold hover:underline cursor-pointer">@AbhaySalvi</span>
-                    {displayContent.replace("@AbhaySalvi", "")}
-                  </span>
-                ) : (
-                  displayContent
-                )}
+                {comment.content}
               </div>
 
               {/* Bottom timestamp */}
               <div className="text-[9px] text-slate-400 font-semibold px-1 select-none">
-                {displayTimestamp}
+                {comment.timestamp}
               </div>
 
             </div>
-          );
-        }))}
+          ))
+        )}
       </div>
 
       {/* Text input form block at bottom */}
