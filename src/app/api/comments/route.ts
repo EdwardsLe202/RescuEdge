@@ -17,36 +17,28 @@ interface Comment {
 
 const COMMENTS_KEY = "rescuedge:comments";
 
-// ─── Redis Client (only when env vars are present) ───────────────────────────
+// ─── Redis Client ─────────────────────────────────────────────────────────────
 function getRedis() {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const url = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) return null;
 
-  // Dynamically import so local dev without env vars doesn't crash
   const { Redis } = require("@upstash/redis");
   return new Redis({ url, token });
 }
 
-// ─── In-memory fallback (local dev without Redis) ────────────────────────────
-let localCache: Comment[] = [];
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 async function getComments(): Promise<Comment[]> {
   const redis = getRedis();
-  if (redis) {
-    const data = (await redis.get(COMMENTS_KEY)) as Comment[] | null;
-    return data ?? [];
-  }
-  return localCache;
+  if (!redis) return [];
+  const data = (await redis.get(COMMENTS_KEY)) as Comment[] | null;
+  return data ?? [];
 }
 
 async function saveComments(comments: Comment[]) {
   const redis = getRedis();
   if (redis) {
     await redis.set(COMMENTS_KEY, comments);
-  } else {
-    localCache = comments;
   }
 }
 
