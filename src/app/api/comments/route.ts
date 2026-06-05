@@ -1,108 +1,85 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import sqlite3 from "sqlite3";
-import path from "path";
 import { authOptions } from "../auth/[...nextauth]/route";
+import fs from "fs";
+import path from "path";
 
-const dbPath = path.resolve(process.cwd(), "comments.db");
+export const dynamic = "force-dynamic";
 
-// Helper to open SQLite database connection
-function getDb(): sqlite3.Database {
-  return new sqlite3.Database(dbPath);
+interface Comment {
+  id: string;
+  author: string;
+  avatar: string;
+  role: string;
+  content: string;
+  timestamp: string;
+  isTagged: boolean;
+  createdAt: string;
 }
 
-// Function to initialize database and tables
-function initDb() {
-  const db = getDb();
-  db.serialize(() => {
-    // Create comments table
-    db.run(`
-      CREATE TABLE IF NOT EXISTS comments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        author TEXT NOT NULL,
-        avatar TEXT NOT NULL,
-        role TEXT NOT NULL,
-        content TEXT NOT NULL,
-        timestamp TEXT NOT NULL,
-        isTagged INTEGER DEFAULT 0,
-        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `, (err) => {
-      if (err) {
-        console.error("Error creating comments table:", err);
-      }
-      db.close();
-    });
-  });
+const jsonPath = path.resolve(process.cwd(), "comments.json");
+
+// In-memory cache to serve requests fast and act as fallback in read-only envs
+let commentsCache: Comment[] = [];
+let isLoaded = false;
+
+// Seed some initial comments if the file doesn't exist
+const initialComments: Comment[] = [
+  {
+    id: "1",
+    author: "System Bot",
+    avatar: "SB",
+    role: "System Monitor",
+    content: "RescuEdge system initialized. Monitoring active devices.",
+    timestamp: "Today at 9:00 AM",
+    isTagged: false,
+    createdAt: new Date().toISOString()
+  }
+];
+
+function loadComments(): Comment[] {
+  if (isLoaded) {
+    return commentsCache;
+  }
+  try {
+    if (fs.existsSync(jsonPath)) {
+      const data = fs.readFileSync(jsonPath, "utf-8");
+      commentsCache = JSON.parse(data);
+    } else {
+      commentsCache = [...initialComments];
+      saveComments(commentsCache);
+    }
+  } catch (error) {
+    console.error("Error loading comments:", error);
+    if (commentsCache.length === 0) {
+      commentsCache = [...initialComments];
+    }
+  }
+  isLoaded = true;
+  return commentsCache;
 }
 
-// Call initDb upon file load
-initDb();
-
-// Promise wrapper for querying all comments
-function allComments(db: sqlite3.Database): Promise<any[]> {
-  return new Promise((resolve, reject) => {
-    db.all("SELECT * FROM comments ORDER BY id ASC", (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows);
-    });
-  });
-}
-
-// Promise wrapper for inserting a new comment
-function insertComment(
-  db: sqlite3.Database,
-  author: string,
-  avatar: string,
-  role: string,
-  content: string,
-  timestamp: string,
-  isTagged: number
-): Promise<number> {
-  return new Promise((resolve, reject) => {
-    db.run(
-      `INSERT INTO comments (author, avatar, role, content, timestamp, isTagged) VALUES (?, ?, ?, ?, ?, ?)`,
-      [author, avatar, role, content, timestamp, isTagged],
-      function (this: any, err) {
-        if (err) reject(err);
-        else resolve(this.lastID);
-      }
-    );
-  });
-}
-
-// Promise wrapper for retrieving a single comment by ID
-function getCommentById(db: sqlite3.Database, id: number): Promise<any> {
-  return new Promise((resolve, reject) => {
-    db.get("SELECT * FROM comments WHERE id = ?", [id], (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
+function saveComments(comments: Comment[]) {
+  try {
+    fs.writeFileSync(jsonPath, JSON.stringify(comments, null, 2), "utf-8");
+  } catch (error) {
+    // Expected on read-only environments like Vercel
+    console.warn("Could not write comments to filesystem (likely read-only environment):", error);
+  }
 }
 
 export async function GET() {
-  const db = getDb();
   try {
-    const rows = await allComments(db);
-    // Convert isTagged integer back to boolean for client ease
-    const formatted = rows.map((r) => ({
-      ...r,
-      id: String(r.id),
-      isTagged: !!r.isTagged,
-    }));
-    return NextResponse.json({ comments: formatted });
+    const list = loadComments();
+    return NextResponse.json({ comments: list });
   } catch (error: any) {
     console.error("GET comments error:", error);
     return NextResponse.json({ error: error.message || "Failed to fetch comments" }, { status: 500 });
-  } finally {
-    db.close();
   }
 }
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
-  const db = getDb();
 
   try {
     const body = await req.json();
@@ -111,6 +88,8 @@ export async function POST(req: Request) {
     if (!content || !content.trim()) {
       return NextResponse.json({ error: "Comment content cannot be empty" }, { status: 400 });
     }
+
+    const list = loadComments();
 
     // Determine values based on user session or standard fallback values
     const author = session?.user?.name || session?.user?.email?.split("@")[0] || "Guest User";
@@ -136,22 +115,28 @@ export async function POST(req: Request) {
     const timestampStr = `Today at ${timeStr} (${dateStr})`;
 
     // Check tag command mention in comment content (e.g. starting with @)
-    const isTagged = content.includes("@") ? 1 : 0;
+    const isTagged = content.includes("@");
 
-    const newId = await insertComment(db, author, initials, role, content, timestampStr, isTagged);
-    const commentRecord = await getCommentById(db, newId);
+    // Generate new unique ID
+    const newId = String(list.length > 0 ? Math.max(...list.map(c => parseInt(c.id) || 0)) + 1 : 1);
 
-    const formattedComment = {
-      ...commentRecord,
-      id: String(commentRecord.id),
-      isTagged: !!commentRecord.isTagged,
+    const newComment: Comment = {
+      id: newId,
+      author,
+      avatar: initials,
+      role,
+      content,
+      timestamp: timestampStr,
+      isTagged,
+      createdAt: now.toISOString()
     };
 
-    return NextResponse.json({ comment: formattedComment });
+    list.push(newComment);
+    saveComments(list);
+
+    return NextResponse.json({ comment: newComment });
   } catch (error: any) {
     console.error("POST comment error:", error);
     return NextResponse.json({ error: error.message || "Failed to create comment" }, { status: 500 });
-  } finally {
-    db.close();
   }
 }
