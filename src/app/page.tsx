@@ -208,71 +208,7 @@ export default function Home() {
 
           {activeMenu === "dashboard" && (
             <>
-              {/* Tactical Camera Node Header Card (Teal Mockup Style) */}
-              <div className="relative overflow-hidden bg-[#00505b] rounded-[20px] p-6 text-white mb-6 shadow-[0_1px_3px_rgba(0,0,0,0.02)] border border-teal-950/20">
-                {/* Ambient glow decoration */}
-                <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
-                <div className="absolute top-1/2 left-1/3 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-                  {/* Left stats info */}
-                  <div>
-                    <span className="text-[9px] font-extrabold text-[#99ccd1] uppercase tracking-widest block">
-                      {t("cameraFeed")}
-                    </span>
-                    <div className="flex items-center gap-3 mt-1.5">
-                      <h2 className="text-2xl md:text-3xl font-black tracking-tight text-white font-mono">
-                        📹 {selectedDeviceId || "Select a Device"}
-                      </h2>
-                      {currentDevice && (
-                        <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-lg text-[9px] font-extrabold flex items-center gap-1 select-none">
-                          {currentDevice.status.toUpperCase()} 100% ↗
-                        </span>
-                      )}
-                    </div>
-                    {currentDevice && (
-                      <p className="text-[10px] text-slate-300 font-medium flex items-center gap-1 mt-2.5">
-                        <MapPin className="w-3.5 h-3.5 text-red-400 shrink-0" />
-                        <span>{t("lastSeen")}: {new Date(currentDevice.lastSeen).toLocaleString()}</span>
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Right Action buttons mimicking mockup */}
-                  <div className="flex items-center gap-2 flex-wrap md:flex-nowrap">
-                    <button 
-                      onClick={() => {
-                        toast.info("Mock incident triggered - surveillance note panel is active.");
-                      }}
-                      className="px-4 py-2.5 bg-[#00d084] hover:bg-[#00b372] text-[#00505b] border-none rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer flex items-center gap-1.5 focus:outline-none"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>{t("postNote") || "Add Incident"}</span>
-                    </button>
-                    
-                    <button 
-                      onClick={() => setActiveMenu("dispatch")}
-                      className="px-4 py-2.5 bg-[#0c6975] hover:bg-[#0a5a64] text-[#a5e0e7] border-none rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shadow-sm focus:outline-none"
-                    >
-                      <ArrowUpRight className="w-4 h-4 text-[#a5e0e7]" />
-                      <span>{t("sendUnitsBtn") || "Dispatch"}</span>
-                    </button>
-
-                    <button 
-                      onClick={() => {
-                        const target = document.getElementById("device-shadow-config");
-                        if (target) {
-                          target.scrollIntoView({ behavior: "smooth" });
-                        }
-                      }}
-                      className="px-4 py-2.5 bg-[#0c6975] hover:bg-[#0a5a64] text-[#a5e0e7] border-none rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shadow-sm focus:outline-none"
-                    >
-                      <SlidersHorizontal className="w-4 h-4 text-[#a5e0e7]" />
-                      <span>{t("deviceConfigTitle")?.split(" ")[0] || "Settings"}</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
 
               <MetricCards
                 alertsCount={alerts.length}
