@@ -64,8 +64,17 @@ export interface IUpdateDeviceDesiredStateResponse {
 // Video API Types
 // ==========================================
 
+export interface IVideoClip {
+  videoKey: string;
+  streamUrl: string;
+  contentType: string;
+  lastModified: string;
+  size: number;
+  expiresIn: number;
+}
+
 export interface IGetVideoStreamUrlResponse {
   deviceId: string;
-  streamUrl: string;
-  expiresIn: number;
+  videos: IVideoClip[];
+  count: number;
 }

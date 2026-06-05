@@ -15,6 +15,7 @@ import {
   Tv,
 } from "lucide-react";
 import { useLanguage } from "@/hooks/useLanguage";
+import { toPlayableSource } from "@/utils/video";
 
 interface VideoPlayerProps {
   isPlaying: boolean;
@@ -71,10 +72,19 @@ export default function VideoPlayer({
   // Simulation mode state
   const [isSimulationMode, setIsSimulationMode] = useState(false);
 
+  // Video readiness: skeleton while loading/transcoding, controls only when ready
+  const [videoStatus, setVideoStatus] = useState<"loading" | "ready" | "error">("loading");
+
   // Reset simulation when device/streamUrl changes
   useEffect(() => {
     setIsSimulationMode(false);
   }, [streamUrl]);
+
+  // Re-enter the loading state whenever the source changes (new device or
+  // when the simulation feed is activated) so the skeleton shows again.
+  useEffect(() => {
+    setVideoStatus("loading");
+  }, [streamUrl, isSimulationMode]);
 
   const handleMouseMove = () => {
     setShowControls(true);
@@ -108,15 +118,21 @@ export default function VideoPlayer({
     if (!url) return false;
     return (
       url.includes(".mp4") ||
+      url.includes(".avi") ||
       url.includes(".m3u8") ||
       url.includes("youtube.com") ||
       url.includes("vimeo.com")
     );
   };
 
+  const resolveVideoSource = (url?: string | null): string => {
+    if (!url) return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+    return toPlayableSource(url);
+  };
+
   const videoSource = isVideoUrl(streamUrl)
-    ? streamUrl!
-    : "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"; // Fallback premium demo video
+    ? resolveVideoSource(streamUrl)
+    : "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 
   const handlePlayPause = () => {
     setIsPlaying(!isPlaying);
@@ -250,6 +266,10 @@ export default function VideoPlayer({
               width="100%"
               height="100%"
               controls={false}
+              onLoadStart={() => setVideoStatus("loading")}
+              onCanPlay={() => setVideoStatus("ready")}
+              onPlaying={() => setVideoStatus("ready")}
+              onError={() => setVideoStatus("error")}
               onTimeUpdate={(e) => {
                 setCurrentTime(e.currentTarget.currentTime);
               }}
@@ -259,6 +279,49 @@ export default function VideoPlayer({
               className="pointer-events-none"
             />
 
+            {/* Loading skeleton — blocks interaction until the video is ready */}
+            {videoStatus === "loading" && (
+              <div className="absolute inset-0 z-30 bg-[#09090e] flex flex-col items-center justify-center select-none">
+                {/* Skeleton placeholders mimicking the control bar */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 flex flex-col gap-3 animate-pulse">
+                  <div className="h-1 w-full rounded-full bg-white/10" />
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-3">
+                      <div className="w-5 h-5 rounded-full bg-white/10" />
+                      <div className="w-5 h-5 rounded-full bg-white/10" />
+                      <div className="w-5 h-5 rounded-full bg-white/10" />
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="w-16 h-5 rounded-md bg-white/10" />
+                      <div className="w-5 h-5 rounded bg-white/10" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Center spinner + status text */}
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-10 h-10 rounded-full border-[3px] border-white/10 border-t-[#00d084] animate-spin" />
+                  <span className="text-xs font-semibold text-gray-300">{t("loadingVideo")}</span>
+                  <span className="text-[10px] text-gray-500 max-w-[220px] text-center leading-relaxed">
+                    {t("transcodingHint")}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Error state */}
+            {videoStatus === "error" && (
+              <div className="absolute inset-0 z-30 bg-[#09090e] flex flex-col items-center justify-center gap-3 select-none">
+                <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                  <VideoOff className="w-7 h-7 text-red-400" />
+                </div>
+                <span className="text-sm font-bold text-white">{t("videoLoadError")}</span>
+              </div>
+            )}
+
+            {/* Controls — only mounted once the video is ready */}
+            {videoStatus === "ready" && (
+            <>
             {/* Play/Pause overlay */}
             <div
               onClick={handlePlayPause}
@@ -435,6 +498,8 @@ export default function VideoPlayer({
                 </div>
               </div>
             </div>
+            </>
+            )}
           </>
         )}
 

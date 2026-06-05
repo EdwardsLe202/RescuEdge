@@ -42,10 +42,39 @@ Note: the REST output uses stage `prod`, while the WebSocket output uses stage `
 
 ### REST API
 
-REST routes are protected by a Cognito User Pool authorizer. Send a Cognito JWT in the `Authorization` header:
+REST routes are protected by a Cognito User Pool authorizer. Send the Cognito **ID token** in the `Authorization` header:
 
 ```http
-Authorization: Bearer <id_or_access_token>
+Authorization: Bearer <idToken>
+```
+
+Do not use `accessToken` for REST API Gateway calls. The deployed REST methods have no OAuth scopes configured, and testing showed access tokens are rejected by API Gateway with `401 Unauthorized`.
+
+The authenticated user must also be assigned to one of the Cognito groups created by `AuthStack`:
+
+| Group | Access |
+| --- | --- |
+| `viewer` | Read alerts, devices, and video stream URLs. |
+| `operator` | Viewer access plus device desired-state updates. |
+| `admin` | Full current API access. |
+
+Users must log out and log in again after group assignment so new tokens include the `cognito:groups` claim.
+
+Observed auth behavior:
+
+| Request state | Result |
+| --- | --- |
+| No token | `401 Unauthorized` from API Gateway. |
+| `accessToken` instead of `idToken` | `401 Unauthorized` from API Gateway. |
+| Valid `idToken` without `cognito:groups` | `403 Forbidden` from Lambda. |
+| Valid `idToken` with `admin`, `operator`, or `viewer` | Request reaches the handler and returns route data. |
+
+Example frontend header:
+
+```ts
+headers: {
+  Authorization: `Bearer ${idToken}`,
+}
 ```
 
 ### WebSocket API
@@ -104,7 +133,8 @@ Notes:
 Example:
 
 ```bash
-curl -H "Authorization: Bearer $TOKEN"   "$REST_BASE/api/v1/alerts?deviceId=device-001&limit=25"
+curl -H "Authorization: Bearer $ID_TOKEN" \
+  "$REST_BASE/api/v1/alerts?deviceId=device-001&limit=25"
 ```
 
 ### List Devices
@@ -140,7 +170,24 @@ Response:
 Example:
 
 ```bash
-curl -H "Authorization: Bearer $TOKEN"   "$REST_BASE/api/v1/devices?status=online"
+curl -H "Authorization: Bearer $ID_TOKEN" \
+  "$REST_BASE/api/v1/devices?status=online"
+```
+
+Tested successful response after Cognito group authorization and DynamoDB Decimal serialization fix:
+
+```json
+{
+  "devices": [
+    {
+      "signalStrength": 0,
+      "deviceId": "node-01",
+      "lastSeen": "",
+      "battery": 0,
+      "status": "idle"
+    }
+  ]
+}
 ```
 
 ### Update Device Desired State
@@ -191,7 +238,11 @@ Response:
 Example:
 
 ```bash
-curl -X PATCH   -H "Authorization: Bearer $TOKEN"   -H "Content-Type: application/json"   -d '{"mode":"live","cameraEnabled":true}'   "$REST_BASE/api/v1/devices/device-001"
+curl -X PATCH \
+  -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"mode":"live","cameraEnabled":true}' \
+  "$REST_BASE/api/v1/devices/device-001"
 ```
 
 ### Get Video Stream URL
@@ -220,14 +271,15 @@ Response:
 
 Frontend usage:
 
-1. Call this endpoint with a Cognito token.
+1. Call this endpoint with a Cognito ID token.
 2. Use `streamUrl` as an image/video frame source.
 3. Refresh the URL before `expiresIn` elapses.
 
 Example:
 
 ```bash
-curl -H "Authorization: Bearer $TOKEN"   "$REST_BASE/api/v1/video/stream-url/device-001"
+curl -H "Authorization: Bearer $ID_TOKEN" \
+  "$REST_BASE/api/v1/video/stream-url/device-001"
 ```
 
 ## WebSocket API
@@ -345,3 +397,18 @@ Known statuses:
 | WebSocket connection storage | `infra/lambda/ws-handler/index.py` |
 | WebSocket token authorizer | `infra/lambda/ws-authorizer/index.py` |
 | S3 upload URL signer for devices | `infra/lambda/stream-signer/index.py` |
+
+
+## Recent Fixes
+
+### REST Cognito token type
+
+Frontend integration must send the Cognito `idToken`, not `accessToken`, to REST API Gateway methods. Access tokens produced `401 Unauthorized` during testing.
+
+### Cognito group authorization
+
+The API Lambda now checks `event.requestContext.authorizer.claims["cognito:groups"]` before executing route actions. Missing groups produce `403 Forbidden`.
+
+### DynamoDB Decimal serialization
+
+DynamoDB numbers are returned to Lambda as `Decimal`. The API handler now serializes `Decimal` values before JSON encoding responses. This fixed a `502 Internal server error` on `GET /api/v1/devices`.

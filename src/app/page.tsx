@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   ChevronRight,
   MapPin,
@@ -13,9 +13,9 @@ import {
   ArrowUpRight,
   Eye,
   X,
-  ExternalLink,
   SlidersHorizontal,
   Plus,
+  Play,
 } from "lucide-react";
 import { toast } from "react-toastify";
 
@@ -24,9 +24,11 @@ import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import MetricCards from "@/components/MetricCards";
 import VideoPlayer from "@/components/VideoPlayer";
-import TimelineFlow from "@/components/TimelineFlow";
-import CommentsSidebar, { Comment } from "@/components/CommentsSidebar";
+import VideoClipList from "@/components/VideoClipList";
+import VideoModal from "@/components/VideoModal";
+import RealtimeAlertFeed from "@/components/RealtimeAlertFeed";
 import AlertsFeed from "@/components/AlertsFeed";
+import CommentsSidebar, { Comment } from "@/components/CommentsSidebar";
 import SendingUnits from "@/components/SendingUnits";
 
 // Import API and WebSocket integrations
@@ -40,6 +42,8 @@ import {
 } from "@/queries";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useLanguage } from "@/hooks/useLanguage";
+import { IVideoClip } from "@/types/api";
+import { clipName, formatBytes } from "@/utils/video";
 
 export default function Home() {
   const { t } = useLanguage();
@@ -65,9 +69,29 @@ export default function Home() {
   );
   const alerts = alertsData?.alerts || [];
 
-  // Fetch stream URL for the selected device
-  const { data: streamData } = useVideoStreamUrl(selectedDeviceId, !!selectedDeviceId);
-  const streamUrl = streamData?.streamUrl || null;
+  // Fetch recorded clips for the selected device
+  const { data: videoData, isLoading: isLoadingVideos } = useVideoStreamUrl(
+    selectedDeviceId,
+    !!selectedDeviceId
+  );
+
+  // Newest clip first
+  const sortedVideos = useMemo(() => {
+    const list = videoData?.videos ?? [];
+    return [...list].sort(
+      (a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime()
+    );
+  }, [videoData?.videos]);
+
+  // The clip the user explicitly picked (null = follow the latest automatically)
+  const [pickedVideoKey, setPickedVideoKey] = useState<string | null>(null);
+
+  // Effective selection, derived in render: the user's pick if it still exists
+  // in the current list, otherwise fall back to the latest clip.
+  const selectedVideo =
+    sortedVideos.find((v) => v.videoKey === pickedVideoKey) ?? sortedVideos[0] ?? null;
+  const selectedVideoKey = selectedVideo?.videoKey ?? null;
+  const streamUrl = selectedVideo?.streamUrl ?? null;
 
   // Update desired state mutation
   const updateDeviceMutation = useUpdateDeviceDesiredState();
@@ -76,7 +100,7 @@ export default function Home() {
   const currentDevice = devices.find((d) => d.deviceId === selectedDeviceId);
 
   // Initialize real-time WebSocket connection
-  useWebSocket();
+  const { isConnected: isWsConnected, liveEvents } = useWebSocket();
 
   // UI Interactive States
   const [searchQuery, setSearchQuery] = useState("");
@@ -105,6 +129,9 @@ export default function Home() {
   const [deviceSearchQuery, setDeviceSearchQuery] = useState<string>("");
   const [activeLightboxUrl, setActiveLightboxUrl] = useState<string | null>(null);
 
+  // Clip opened in the recordings popup player
+  const [activeClip, setActiveClip] = useState<IVideoClip | null>(null);
+
   useEffect(() => {
     setIsPlaying(false);
     setCurrentTime(0);
@@ -125,9 +152,11 @@ export default function Home() {
     });
   };
 
-  // Timeline seeking click handler
-  const handleTimelineClick = (secs: number) => {
-    setCurrentTime(secs);
+  // Select a clip from the library to play it on the main player
+  const handleSelectVideo = (videoKey: string) => {
+    setPickedVideoKey(videoKey);
+    setCurrentTime(0);
+    setIsPlaying(true);
   };
 
   // Handle desired state shadow update from VideoPlayer controls
@@ -215,13 +244,14 @@ export default function Home() {
                 isUpdatingDesiredState={updateDeviceMutation.isPending}
               />
 
-              <TimelineFlow
-                currentTime={currentTime}
-                duration={duration}
-                handleTimelineClick={handleTimelineClick}
+              <VideoClipList
+                videos={sortedVideos.slice(0, 3)}
+                selectedVideoKey={selectedVideoKey}
+                onSelect={handleSelectVideo}
               />
 
-              <div className="mt-6">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+                <RealtimeAlertFeed events={liveEvents} isConnected={isWsConnected} />
                 <AlertsFeed alerts={alerts} isLoading={isLoadingAlerts} />
               </div>
             </>
@@ -232,92 +262,64 @@ export default function Home() {
               <div className="mb-5 flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold tracking-tight text-gray-900 leading-snug">
-                    {t("securityEventRecordings")}
+                    {t("videoRecordings")}
                   </h2>
                   <p className="text-xs text-gray-500 font-medium mt-1">
-                    {t("galleryDesc")}
+                    {t("videoRecordingsDesc")}
                   </p>
                 </div>
+                {selectedDeviceId && (
+                  <span className="text-[10px] font-bold text-slate-400 font-mono bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">
+                    {selectedDeviceId} · {sortedVideos.length}
+                  </span>
+                )}
               </div>
 
-              {isLoadingAllAlerts ? (
+              {isLoadingVideos ? (
                 <div className="flex-1 flex items-center justify-center min-h-[300px]">
-                  <span className="text-sm text-gray-400 font-medium animate-pulse">{t("loadingGallery")}</span>
+                  <span className="text-sm text-gray-400 font-medium animate-pulse">{t("loadingVideo")}</span>
                 </div>
-              ) : allAlerts.length === 0 ? (
+              ) : sortedVideos.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center min-h-[300px] bg-white border border-slate-200/80 rounded-[20px] p-8 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
                   <Video className="w-12 h-12 text-slate-300 mb-3" />
-                  <span className="text-sm font-bold text-slate-500">{t("noRecordedEvents")}</span>
+                  <span className="text-sm font-bold text-slate-500">{t("noClipsForDevice")}</span>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 pb-6">
-                  {allAlerts.map((alert) => (
-                    <div 
-                      key={alert.alertId} 
-                      className="bg-white border border-slate-200/80 rounded-[20px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 flex flex-col group"
+                  {sortedVideos.map((video, index) => (
+                    <button
+                      key={video.videoKey}
+                      onClick={() => setActiveClip(video)}
+                      className="bg-white border border-slate-200/80 rounded-[20px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 flex flex-col group text-left cursor-pointer p-0"
                     >
-                      {/* Image section */}
-                      <div className="relative aspect-video bg-gray-900 overflow-hidden border-b border-gray-100">
-                        {alert.snapshotUrl ? (
-                          <>
-                            <img 
-                              src={alert.snapshotUrl} 
-                              alt={`Snapshot ${alert.alertId}`} 
-                              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
-                            />
-                            <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2.5">
-                              <button
-                                onClick={() => setActiveLightboxUrl(alert.snapshotUrl)}
-                                className="w-9 h-9 rounded-xl bg-white/90 text-gray-800 flex items-center justify-center hover:scale-105 transition-all shadow cursor-pointer border-none"
-                                title="Zoom Image"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400">
-                            <Video className="w-8 h-8" />
-                          </div>
-                        )}
-                        
-                        {/* AI Badge overlay */}
-                        <div className="absolute top-3 left-3 bg-red-500/90 backdrop-blur border border-red-400/30 text-white font-bold text-[9px] px-2.5 py-1 rounded-full uppercase tracking-wider shadow">
-                          {t("aiIncident")}
+                      {/* Play / thumbnail area */}
+                      <div className="relative aspect-video bg-[#09090e] flex items-center justify-center overflow-hidden border-b border-gray-100">
+                        <div className="w-14 h-14 rounded-full bg-white/10 border border-white/15 backdrop-blur-md flex items-center justify-center text-white group-hover:bg-[#00d084] group-hover:text-[#00505b] group-hover:scale-110 transition-all shadow-lg">
+                          <Play className="w-6 h-6 fill-current translate-x-0.5" />
                         </div>
+
+                        {index === 0 && (
+                          <span className="absolute top-3 left-3 bg-emerald-500/90 backdrop-blur border border-emerald-400/30 text-white font-bold text-[9px] px-2.5 py-1 rounded-full uppercase tracking-wider shadow">
+                            {t("latestBadge")}
+                          </span>
+                        )}
+
+                        <span className="absolute bottom-2 right-2 bg-black/60 backdrop-blur text-white text-[9px] font-mono px-1.5 py-0.5 rounded">
+                          {formatBytes(video.size)}
+                        </span>
                       </div>
 
                       {/* Content section */}
-                      <div className="p-4 flex-1 flex flex-col justify-between">
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-bold font-mono text-gray-800">
-                              📹 {alert.deviceId}
-                            </span>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-100">
-                              {Math.round(parseFloat(alert.confidence) * 100)}% Conf.
-                            </span>
-                          </div>
-                          <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1 mb-4">
-                            <Clock className="w-3.5 h-3.5" />
-                            {new Date(alert.timestamp).toLocaleString()}
-                          </span>
-                        </div>
-
-                        <div className="pt-3 border-t border-gray-100 flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              setSelectedDeviceId(alert.deviceId);
-                              setActiveMenu("dashboard");
-                            }}
-                            className="flex-1 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-xs font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer border border-indigo-100/50"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                            {t("viewLiveFeed")}
-                          </button>
-                        </div>
+                      <div className="p-4">
+                        <span className="block text-xs font-bold font-mono text-gray-800 truncate">
+                          {clipName(video.videoKey)}
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1 mt-2">
+                          <Clock className="w-3.5 h-3.5" />
+                          {new Date(video.lastModified).toLocaleString()}
+                        </span>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
@@ -571,6 +573,9 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Recordings video popup player */}
+      <VideoModal key={activeClip?.videoKey} clip={activeClip} onClose={() => setActiveClip(null)} />
     </main>
   );
 }
