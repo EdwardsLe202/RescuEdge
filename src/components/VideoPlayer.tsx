@@ -14,6 +14,7 @@ import {
   VideoOff,
   Tv,
 } from "lucide-react";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface VideoPlayerProps {
   isPlaying: boolean;
@@ -56,6 +57,7 @@ export default function VideoPlayer({
   onUpdateDesiredState,
   isUpdatingDesiredState,
 }: VideoPlayerProps) {
+  const { t } = useLanguage();
   const playerRef = useRef<HTMLVideoElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -183,16 +185,16 @@ export default function VideoPlayer({
 
   if (!hasMounted) {
     return (
-      <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-lg flex flex-col mb-6">
+      <div className="bg-white border border-slate-200/80 rounded-[20px] p-5 shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex flex-col mb-6">
         <div className="relative aspect-video max-h-[500px] w-full rounded-2xl bg-[#09090e] overflow-hidden flex items-center justify-center">
-          <span className="text-sm text-gray-400 font-medium animate-pulse">Initializing Player...</span>
+          <span className="text-sm text-gray-400 font-medium animate-pulse">{t("initializingPlayer")}</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-lg flex flex-col mb-6">
+    <div className="bg-white border border-slate-200/80 rounded-[20px] p-5 shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex flex-col mb-6">
       
       {/* ReactPlayer Container */}
       <div
@@ -204,19 +206,19 @@ export default function VideoPlayer({
         {!streamUrl && !isSimulationMode ? (
           <div className="absolute inset-0 bg-[#09090e] flex flex-col items-center justify-center p-6 text-center select-none z-20">
             {/* Ambient glow */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
             <div className="relative z-10 flex flex-col items-center max-w-sm">
               <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 mb-4 shadow-xl backdrop-blur-md">
-                <VideoOff className="w-8 h-8 text-indigo-400" />
+                <VideoOff className="w-8 h-8 text-emerald-500" />
               </div>
               
-              <h3 className="text-lg font-bold text-white mb-2 tracking-tight">
-                No Live Stream Signal
+              <h3 className="text-base font-bold text-white mb-2 tracking-tight">
+                {t("noLiveSignal")}
               </h3>
               
               <p className="text-xs text-gray-400 mb-6 leading-relaxed">
-                This camera device is currently offline or does not have an active live S3 video stream feed.
+                {t("offlineDesc")}
               </p>
               
               <button
@@ -224,16 +226,16 @@ export default function VideoPlayer({
                   setIsSimulationMode(true);
                   setIsPlaying(true);
                 }}
-                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold border border-indigo-400/30 flex items-center gap-2 cursor-pointer shadow-lg shadow-indigo-600/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                className="px-5 py-2.5 rounded-xl bg-[#00d084] hover:bg-[#00b372] text-[#00505b] text-xs font-bold border-none flex items-center gap-2 cursor-pointer shadow-lg shadow-emerald-600/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
               >
                 <Tv className="w-4 h-4" />
-                Activate Simulation Feed
+                {t("activateSimulation")}
               </button>
             </div>
             
-            <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center text-[10px] text-gray-500 font-mono tracking-wider">
-              <span>STATUS: INACTIVE</span>
-              <span>FEED: NULL</span>
+            <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center text-[9px] text-gray-500 font-mono tracking-wider font-semibold">
+              <span>{t("statusInactive")}</span>
+              <span>{t("feedNull")}</span>
             </div>
           </div>
         ) : (
@@ -267,14 +269,14 @@ export default function VideoPlayer({
               <button
                 onClick={(e) => { e.stopPropagation(); handleRewind(); }}
                 className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/10 flex items-center justify-center transition-transform hover:scale-105 cursor-pointer"
-                title="-10 Seconds"
+                title="-10s"
               >
                 <RotateCcw className="w-5 h-5" />
               </button>
 
               <button
                 onClick={(e) => { e.stopPropagation(); handlePlayPause(); }}
-                className="w-16 h-16 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center shadow-2xl transition-transform hover:scale-105 border border-indigo-400 cursor-pointer"
+                className="w-16 h-16 rounded-full bg-[#00d084] hover:bg-[#00b372] text-[#00505b] flex items-center justify-center shadow-2xl transition-transform hover:scale-105 border-none cursor-pointer"
               >
                 {isPlaying ? <Pause className="w-7 h-7 fill-current" /> : <Play className="w-7 h-7 fill-current translate-x-0.5" />}
               </button>
@@ -282,7 +284,7 @@ export default function VideoPlayer({
               <button
                 onClick={(e) => { e.stopPropagation(); handleForward(); }}
                 className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/10 flex items-center justify-center transition-transform hover:scale-105 cursor-pointer"
-                title="+10 Seconds"
+                title="+10s"
               >
                 <RotateCw className="w-5 h-5" />
               </button>
@@ -290,9 +292,9 @@ export default function VideoPlayer({
 
             {/* Live Signal Badge */}
             <div className="absolute top-4 right-4 flex items-center gap-2 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full border border-white/20 shadow-md">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse-live"></span>
-              <span className="text-[10px] md:text-xs font-bold text-white font-mono tracking-wider">
-                {isVideoUrl(streamUrl) ? "LIVE STREAM ACTIVE" : "PLAYBACK SIMULATION"}
+              <span className="w-2 h-2 rounded-full bg-[#00d084] animate-pulse"></span>
+              <span className="text-[9px] font-bold text-white font-mono tracking-wider">
+                {isVideoUrl(streamUrl) ? t("liveStreamActive") : t("playbackSimulation")}
               </span>
             </div>
 
@@ -304,7 +306,7 @@ export default function VideoPlayer({
             >
               {/* Scrub bar */}
               <div className="flex items-center gap-3">
-                <span className="text-xs font-semibold text-white font-mono select-none">
+                <span className="text-[10px] font-bold text-white font-mono select-none">
                   {formatTime(currentTime)}
                 </span>
                 
@@ -313,14 +315,14 @@ export default function VideoPlayer({
                   <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-white/20 rounded-full overflow-hidden">
                     {/* Custom Track Progress */}
                     <div 
-                      className="h-full bg-indigo-500 rounded-full transition-all duration-75"
+                      className="h-full bg-[#00d084] rounded-full transition-all duration-75"
                       style={{ width: `${(currentTime / (duration || 100)) * 100}%` }}
                     />
                   </div>
                   {/* Custom Thumb dot */}
                   <div
-                    className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-white border border-indigo-600 shadow-[0_0_10px_rgba(99,102,241,0.8)] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ left: `calc(${(currentTime / (duration || 100)) * 100}% - 7px)` }}
+                    className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white border border-[#00d084] shadow-[0_0_10px_rgba(0,208,132,0.8)] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ left: `calc(${(currentTime / (duration || 100)) * 100}% - 6px)` }}
                   />
                   {/* Invisible native range input on top */}
                   <input
@@ -333,7 +335,7 @@ export default function VideoPlayer({
                   />
                 </div>
 
-                <span className="text-xs font-semibold text-white font-mono select-none">
+                <span className="text-[10px] font-bold text-white font-mono select-none">
                   {formatTime(duration)}
                 </span>
               </div>
@@ -343,14 +345,14 @@ export default function VideoPlayer({
                 <div className="flex items-center gap-4 text-white">
                   <button
                     onClick={handlePlayPause}
-                    className="hover:text-indigo-400 transition-colors cursor-pointer"
+                    className="hover:text-emerald-500 transition-colors cursor-pointer border-none bg-transparent"
                   >
                     {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current" />}
                   </button>
 
                   <button
                     onClick={handleRewind}
-                    className="hover:text-indigo-400 transition-colors cursor-pointer"
+                    className="hover:text-emerald-500 transition-colors cursor-pointer border-none bg-transparent"
                     title="-10s"
                   >
                     <RotateCcw className="w-4 h-4" />
@@ -358,7 +360,7 @@ export default function VideoPlayer({
 
                   <button
                     onClick={handleForward}
-                    className="hover:text-indigo-400 transition-colors cursor-pointer"
+                    className="hover:text-emerald-500 transition-colors cursor-pointer border-none bg-transparent"
                     title="+10s"
                   >
                     <RotateCw className="w-4 h-4" />
@@ -367,7 +369,7 @@ export default function VideoPlayer({
                   <div className="flex items-center gap-2 group/volume">
                     <button
                       onClick={handleToggleMute}
-                      className="hover:text-indigo-400 transition-colors cursor-pointer"
+                      className="hover:text-emerald-500 transition-colors cursor-pointer border-none bg-transparent"
                     >
                       {isMuted || volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                     </button>
@@ -378,14 +380,14 @@ export default function VideoPlayer({
                       <div className="absolute left-0 right-0 h-1 bg-white/20 rounded-full overflow-hidden">
                         {/* Custom Track Progress */}
                         <div 
-                          className="h-full bg-indigo-500 rounded-full"
+                          className="h-full bg-[#00d084] rounded-full"
                           style={{ width: `${(isMuted ? 0 : volume) * 100}%` }}
                         />
                       </div>
                       {/* Custom Thumb dot */}
                       <div 
-                        className="absolute w-2.5 h-2.5 rounded-full bg-white border border-indigo-600 shadow pointer-events-none"
-                        style={{ left: `calc(${(isMuted ? 0 : volume) * 100}% - 5px)` }}
+                        className="absolute w-2 h-2 rounded-full bg-white border border-[#00d084] shadow pointer-events-none"
+                        style={{ left: `calc(${(isMuted ? 0 : volume) * 100}% - 4px)` }}
                       />
                       {/* Invisible native range input */}
                       <input
@@ -401,17 +403,17 @@ export default function VideoPlayer({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-5 text-white">
+                <div className="flex items-center gap-4 text-white">
                   {/* Playback speed rate */}
                   <div className="flex items-center gap-1 bg-white/10 rounded-lg p-0.5 border border-white/10">
                     {[1.0, 1.25, 1.5, 2.0].map((speed) => (
                       <button
                         key={speed}
                         onClick={() => setPlaybackSpeed(speed)}
-                        className={`px-2 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
+                        className={`px-2 py-0.5 text-[9px] font-bold rounded transition-all cursor-pointer border-none ${
                           playbackSpeed === speed
-                            ? "bg-indigo-600 text-white shadow font-black"
-                            : "text-white/60 hover:text-white"
+                            ? "bg-[#004d56] text-white shadow font-black"
+                            : "text-white/60 hover:text-white bg-transparent"
                         }`}
                       >
                         {speed}x
@@ -421,13 +423,13 @@ export default function VideoPlayer({
 
                   <button
                     onClick={handleFullscreen}
-                    className="hover:text-indigo-400 transition-colors cursor-pointer"
-                    title="Fullscreen"
+                    className="hover:text-emerald-500 transition-colors cursor-pointer border-none bg-transparent"
+                    title={t("fullscreen") || "Fullscreen"}
                   >
                     <Maximize className="w-5 h-5" />
                   </button>
 
-                  <button className="hover:text-indigo-400 transition-colors cursor-pointer">
+                  <button className="hover:text-emerald-500 transition-colors cursor-pointer border-none bg-transparent">
                     <Settings className="w-5 h-5" />
                   </button>
                 </div>
@@ -440,30 +442,30 @@ export default function VideoPlayer({
 
       {/* DEVICE SHADOW CONTROL PANEL */}
       {onUpdateDesiredState && (
-        <div className="mt-5 pt-4 border-t border-gray-150">
-          <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
-            Device Configuration (AWS IoT Shadow State)
+        <div id="device-shadow-config" className="mt-5 pt-4 border-t border-slate-100">
+          <h4 className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest mb-3 select-none">
+            {t("deviceConfigTitle")}
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             
             {/* Mode Switcher */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                Operation Mode
+              <label className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider select-none">
+                {t("operationMode")}
               </label>
-              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200/50 rounded-xl p-1 w-fit">
+              <div className="flex items-center gap-1 bg-slate-50 border border-slate-200/50 rounded-xl p-1 w-fit">
                 {["live", "offline"].map((m) => (
                   <button
                     key={m}
                     disabled={isUpdatingDesiredState}
                     onClick={() => onUpdateDesiredState({ mode: m })}
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all capitalize cursor-pointer ${
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all capitalize cursor-pointer border-none ${
                       mode === m
-                        ? "bg-indigo-600 text-white shadow"
-                        : "text-gray-500 hover:text-gray-900"
+                        ? "bg-[#004d56] text-white shadow"
+                        : "text-slate-500 hover:text-slate-800 bg-transparent"
                     }`}
                   >
-                    {m}
+                    {m === "live" ? t("liveMode") : t("offlineModeLabel")}
                   </button>
                 ))}
               </div>
@@ -471,29 +473,29 @@ export default function VideoPlayer({
 
             {/* Camera Enable Toggle */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                Camera Sensor
+              <label className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider select-none">
+                {t("cameraSensor")}
               </label>
               <button
                 disabled={isUpdatingDesiredState}
                 onClick={() => onUpdateDesiredState({ cameraEnabled: !cameraEnabled })}
                 className={`px-4 py-2 text-xs font-bold rounded-xl border w-fit cursor-pointer transition-all ${
                   cameraEnabled
-                    ? "bg-emerald-50 border-emerald-200 text-emerald-600 shadow-sm"
-                    : "bg-red-50 border-red-200 text-red-600"
+                    ? "bg-emerald-50 border-emerald-250 text-emerald-600 shadow-sm"
+                    : "bg-red-50 border-red-200 text-red-650"
                 }`}
               >
-                {cameraEnabled ? "🟢 Enabled" : "🔴 Disabled"}
+                {cameraEnabled ? t("sensorEnabled") : t("sensorDisabled")}
               </button>
             </div>
 
             {/* Alert Threshold Slider */}
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                  AI Alert Threshold
+                <label className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider select-none">
+                  {t("aiAlertThreshold")}
                 </label>
-                <span className="text-[10px] font-bold text-indigo-600 font-mono">
+                <span className="text-[10px] font-bold text-emerald-600 font-mono">
                   {alertThreshold !== undefined ? Math.round(alertThreshold * 100) : 85}%
                 </span>
               </div>
@@ -506,7 +508,7 @@ export default function VideoPlayer({
                   disabled={isUpdatingDesiredState}
                   value={alertThreshold !== undefined ? alertThreshold : 0.85}
                   onChange={(e) => onUpdateDesiredState({ alertThreshold: parseFloat(e.target.value) })}
-                  className="flex-1 h-1.5 bg-gray-200 accent-indigo-600 rounded-lg appearance-none cursor-pointer outline-none"
+                  className="flex-1 h-1.5 bg-gray-200 accent-[#00d084] rounded-lg appearance-none cursor-pointer outline-none"
                 />
               </div>
             </div>

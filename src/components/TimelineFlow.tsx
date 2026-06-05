@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface TimelineFlowProps {
   currentTime: number;
@@ -13,14 +14,16 @@ export default function TimelineFlow({
   duration,
   handleTimelineClick,
 }: TimelineFlowProps) {
+  const { t } = useLanguage();
+
   return (
-    <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-lg flex flex-col relative overflow-hidden">
-      <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
-        AI EVENT SEGMENTS TIMELINE FLOW
+    <div className="bg-white border border-slate-200/80 rounded-[20px] p-5 shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex flex-col relative overflow-hidden">
+      <h3 className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest mb-4 select-none">
+        {t("timelineTitle")}
       </h3>
 
       {/* Timeline marker rules */}
-      <div className="flex justify-between text-[9px] text-gray-400 font-mono tracking-wider font-bold mb-1 px-1 select-none">
+      <div className="flex justify-between text-[9px] text-slate-400 font-mono tracking-wider font-bold mb-1.5 px-1 select-none">
         <span>00:00</span>
         <span>00:05</span>
         <span>00:10</span>
@@ -37,7 +40,7 @@ export default function TimelineFlow({
       </div>
 
       {/* Scrolling wrapper frame segments */}
-      <div className="relative border border-gray-250 rounded-xl overflow-hidden bg-gray-50 select-none">
+      <div className="relative border border-slate-200 rounded-xl overflow-hidden bg-slate-50 select-none">
         <div className="grid gap-1 h-14 md:h-18 p-1" style={{ gridTemplateColumns: "repeat(13, minmax(0, 1fr))" }}>
           
           {/* Sequence of 13 mock segment panels */}
@@ -52,8 +55,8 @@ export default function TimelineFlow({
                 onClick={() => handleTimelineClick(progressSecs)}
                 className={`relative rounded-lg overflow-hidden border cursor-pointer group/item transition-all hover:scale-[1.03] ${
                   isSelected
-                    ? "border-indigo-600 ring-2 ring-indigo-600/30"
-                    : "border-gray-200 hover:border-gray-400"
+                    ? "border-[#00cc88] ring-2 ring-[#00cc88]/20"
+                    : "border-slate-200 hover:border-slate-400"
                 }`}
               >
                 {/* Mock drawing container */}

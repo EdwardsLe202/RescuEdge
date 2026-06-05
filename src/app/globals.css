@@ -51,19 +51,18 @@
 }
 
 :root {
-  --background: #f0f3f8;
+  --background: #f8fafc;
   --foreground: #1e293b;
-  --indigo-primary: #3f51b5;
-  --indigo-hover: #303f9f;
-  --sidebar-active: #e9ecfc;
+  --indigo-primary: #00505b;
+  --indigo-hover: #003e47;
+  --sidebar-active: #ffffff;
   --card-bg: #ffffff;
   --text-muted: #64748b;
-  --border-light: rgba(0, 0, 0, 0.06);
+  --border-light: rgba(0, 0, 0, 0.05);
 }
 
 body {
-  background: var(--background);
-  background-image: radial-gradient(circle at 10% 10%, #f7f9fc 0%, #e2e8f0 100%);
+  background: #f8fafc;
   color: var(--foreground);
   font-size: 14px;
   line-height: 1.6;

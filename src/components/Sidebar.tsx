@@ -6,13 +6,12 @@ import {
   LayoutDashboard,
   Video,
   AlertTriangle,
-  Lock,
-  FileSpreadsheet,
   Settings,
   LogOut,
   Send,
 } from "lucide-react";
 import { IDevice } from "@/types/api";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface SidebarProps {
   activeMenu: string;
@@ -30,6 +29,7 @@ export default function Sidebar({
   setSelectedDeviceId,
 }: SidebarProps) {
   const { data: session } = useSession();
+  const { t } = useLanguage();
 
   // Get user name and dynamic avatar initials
   const userName = session?.user?.name;
@@ -44,17 +44,20 @@ export default function Sidebar({
     : "";
 
   return (
-    <aside className="w-64 border-r border-gray-100 flex flex-col justify-between bg-white/40 backdrop-blur-md hidden lg:flex shrink-0">
+    <aside className="w-64 border-r border-slate-200 flex flex-col justify-between bg-[#f8fafc] hidden lg:flex shrink-0 z-30 select-none">
       {/* Upper menu navigation elements */}
-      <div className="p-4 space-y-7 overflow-y-auto">
+      <div className="p-4 space-y-6 overflow-y-auto">
         
-        {/* Menu Categories */}
+        {/* Menu Section */}
         <div className="space-y-1">
+          <div className="px-3 mb-2 text-[9px] font-extrabold text-slate-400 uppercase tracking-widest block">
+            General
+          </div>
           {[
-            { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-            { id: "recordings", label: "Recordings", icon: Video },
-            { id: "alerts", label: "Alerts", icon: AlertTriangle },
-            { id: "dispatch", label: "Send Units", icon: Send },
+            { id: "dashboard", label: t("dashboard"), icon: LayoutDashboard },
+            { id: "recordings", label: t("recordings"), icon: Video },
+            { id: "alerts", label: t("alerts"), icon: AlertTriangle },
+            { id: "dispatch", label: t("sendUnits"), icon: Send },
           ].map((item) => {
             const Icon = item.icon;
             const isActive = activeMenu === item.id;
@@ -62,15 +65,15 @@ export default function Sidebar({
               <button
                 key={item.id}
                 onClick={() => setActiveMenu(item.id)}
-                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer group ${
+                className={`w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer group focus:outline-none border ${
                   isActive
-                    ? "bg-indigo-50 text-indigo-600 border-l-4 border-indigo-600 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    ? "bg-white text-[#00505b] border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)] font-bold"
+                    : "text-slate-500 border-transparent hover:text-slate-900 hover:bg-slate-100/50"
                 }`}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5">
                   <Icon className={`w-4 h-4 transition-colors ${
-                    isActive ? "text-indigo-600" : "text-gray-400 group-hover:text-gray-600"
+                    isActive ? "text-[#00505b]" : "text-slate-400 group-hover:text-slate-600"
                   }`} />
                   <span>{item.label}</span>
                 </div>
@@ -81,14 +84,12 @@ export default function Sidebar({
 
         {/* Subsection: Devices */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between px-3 text-xs font-semibold tracking-wider text-gray-400 uppercase">
-            <span className="flex items-center gap-1">
-              <Video className="w-3 h-3" /> All Devices
-            </span>
+          <div className="flex items-center justify-between px-3 text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">
+            <span>Devices</span>
           </div>
-          <div className="space-y-0.5">
+          <div className="space-y-0.5 max-h-[300px] overflow-y-auto pr-1">
             {devices.length === 0 ? (
-              <span className="text-[10px] text-gray-400 px-4 block">No devices online</span>
+              <span className="text-[10px] text-slate-400 px-3 block">{t("noDevicesOnline")}</span>
             ) : (
               devices.map((device) => {
                 const isSelected = selectedDeviceId === device.deviceId;
@@ -99,21 +100,21 @@ export default function Sidebar({
                   <button
                     key={device.deviceId}
                     onClick={() => setSelectedDeviceId(device.deviceId)}
-                    className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 cursor-pointer flex items-center justify-between group ${
+                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer flex items-center justify-between group focus:outline-none border ${
                       isSelected
-                        ? "text-indigo-600 font-semibold bg-indigo-50 border-l-4 border-indigo-600 shadow-sm"
-                        : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                        ? "text-[#00505b] font-bold bg-white border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)]"
+                        : "text-slate-500 border-transparent hover:text-slate-800 hover:bg-slate-100/40"
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${
-                        isIncident ? "bg-red-500 animate-pulse" : isOnline ? "bg-emerald-500" : "bg-gray-300"
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                        isIncident ? "bg-red-500 animate-pulse" : isOnline ? "bg-emerald-500" : "bg-slate-300"
                       }`} />
                       <span className="truncate">📹 {device.deviceId}</span>
                     </div>
                     {isOnline && device.battery !== undefined && (
-                      <span className="text-[10px] text-gray-400 font-mono">
-                        🔋{device.battery}%
+                      <span className="text-[9px] text-slate-400 font-mono">
+                        {device.battery}%
                       </span>
                     )}
                   </button>
@@ -125,31 +126,34 @@ export default function Sidebar({
 
       </div>
 
-      {/* Profile Panel at the Bottom */}
+      {/* Profile Panel at the Bottom (Mockup Style) */}
       {userName && (
-        <div className="p-4 border-t border-gray-100 bg-white/30 shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center font-bold text-indigo-600 border border-indigo-200/50 shrink-0">
+        <div className="p-3 border-t border-slate-200 bg-[#f8fafc] shrink-0">
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.02)] flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-7 h-7 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center font-bold text-[#00505b] text-[10px] shrink-0">
                 {initials}
               </div>
               <div className="min-w-0">
-                <h4 className="text-xs font-semibold text-gray-800 leading-tight truncate">{userName}</h4>
+                <h4 className="text-[10px] font-bold text-slate-800 leading-none truncate">{userName}</h4>
                 {userEmail && (
-                  <span className="text-[10px] text-gray-400 font-medium truncate block">{userEmail}</span>
+                  <span className="text-[8px] text-slate-400 font-medium truncate block mt-0.5">{userEmail}</span>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <button className="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
-                <Settings className="w-4 h-4" />
+            <div className="flex items-center gap-0.5 shrink-0">
+              <button 
+                className="w-6 h-6 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer border-none focus:outline-none"
+                title={t("settings")}
+              >
+                <Settings className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => signOut({ callbackUrl: "/login" })}
-                className="w-7 h-7 rounded-lg hover:bg-red-50 hover:text-red-500 flex items-center justify-center text-gray-400 transition-colors cursor-pointer"
-                title="Sign Out"
+                className="w-6 h-6 rounded-lg hover:bg-red-50 hover:text-red-500 flex items-center justify-center text-slate-400 transition-colors cursor-pointer border-none focus:outline-none"
+                title={t("signOut")}
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>

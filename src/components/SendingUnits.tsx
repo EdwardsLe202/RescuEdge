@@ -20,6 +20,7 @@ import {
   Wind
 } from "lucide-react";
 import { toast } from "react-toastify";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface SendingUnitsProps {
   onBackToDashboard: () => void;
@@ -36,6 +37,7 @@ interface DisasterMarker {
 }
 
 export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
+  const { t } = useLanguage();
   // Navigation & Control States
   const [selectedUnit, setSelectedUnit] = useState<"Police" | "Fire" | "Rescue">("Police");
   const [incidentType, setIncidentType] = useState<string>("Flooding");
@@ -141,7 +143,7 @@ export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
           }
           return prev + `\nCoordinates: Lat ${lat.toFixed(4)}, Lng ${lng.toFixed(4)}`;
         });
-        toast.info(`Selected dispatch point at Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`, {
+        toast.info(`${t("selectedPoint")} Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`, {
           toastId: "dispatch-point-click"
         });
       });
@@ -210,7 +212,7 @@ export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
             if (event.lat !== null && event.lng !== null) {
               newMarkers.push({
                 id: event.id,
-                title: `NASA Alert: ${event.title}`,
+                title: `${t("nasaAlert")}: ${event.title}`,
                 category: event.category,
                 lat: event.lat,
                 lng: event.lng,
@@ -226,7 +228,7 @@ export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
       })
       .catch((err) => {
         console.error("Error fetching NASA events:", err);
-        setErrorNasa("Could not fetch real-time NASA alerts. Using simulated local points.");
+        setErrorNasa(t("nasaError"));
         setIsLoadingNasa(false);
       });
   };
@@ -286,9 +288,9 @@ export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
         .bindPopup(`
           <div style="font-family: sans-serif; font-size: 11px; color: #1e293b; padding: 2px; line-height: 1.4;">
             <strong style="display: block; font-size: 12px; margin-bottom: 2px; color: #0f172a;">${m.title}</strong>
-            <span style="font-weight: bold; text-transform: uppercase; color: #059669; font-size: 9px;">Category: ${m.category}</span>
+            <span style="font-weight: bold; text-transform: uppercase; color: #059669; font-size: 9px;">${t("categoryLabel")}: ${m.category}</span>
             <br/>
-            <span style="color: #64748b; font-size: 9px;">Coordinates: Lat ${m.lat.toFixed(4)}, Lng ${m.lng.toFixed(4)}</span>
+            <span style="color: #64748b; font-size: 9px;">${t("coordinatesLabel")}: Lat ${m.lat.toFixed(4)}, Lng ${m.lng.toFixed(4)}</span>
           </div>
         `);
 
@@ -302,12 +304,12 @@ export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
 
   // Helper to get danger level label
   const getDangerLabel = (val: number) => {
-    if (val < 20) return "Low / Safe";
-    if (val < 40) return "Below Average";
-    if (val < 60) return "Moderate Risk";
-    if (val < 80) return "High Alert";
-    if (val < 95) return "Very High / Severe";
-    return "Critical / Extreme Danger";
+    if (val < 20) return t("dangerLow");
+    if (val < 40) return t("dangerBelowAvg");
+    if (val < 60) return t("dangerModerate");
+    if (val < 80) return t("dangerHigh");
+    if (val < 95) return t("dangerVeryHigh");
+    return t("dangerCritical");
   };
 
   // Helper to trigger dispatch action
@@ -348,7 +350,7 @@ export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
       map.setView([lat, lng], 9);
     }
 
-    toast.success(`Dispatched ${selectedUnit} units to Lat ${lat.toFixed(4)}, Lng ${lng.toFixed(4)}!`, {
+    toast.success(`${t("dispatchedSuccess")}: Lat ${lat.toFixed(4)}, Lng ${lng.toFixed(4)}!`, {
       icon: () => <Shield className="w-5 h-5 text-emerald-600" />
     });
   };
@@ -362,7 +364,7 @@ export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
     if (map && event.lat && event.lng) {
       map.setView([event.lat, event.lng], 8);
     }
-    toast.info(`Zooming to NASA Alert: ${event.title}`);
+    toast.info(`${t("zoomingToAlert")} ${event.title}`);
   };
 
   return (
@@ -387,7 +389,7 @@ export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
             </span>
             <span className="text-[10px] tracking-wide font-bold text-slate-700 uppercase">
-              On the line with #39
+              {t("onTheLine")}
             </span>
           </div>
         </div>
@@ -401,8 +403,8 @@ export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
           {/* Header */}
           <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="text-lg font-bold text-slate-900 leading-tight">Sending Units</h2>
-              <p className="text-[10px] text-slate-400 font-medium">Disaster Dispatch Coordination Center</p>
+              <h2 className="text-lg font-bold text-slate-900 leading-tight">{t("sendingUnitsTitle")}</h2>
+              <p className="text-[10px] text-slate-400 font-medium">{t("dispatchSubtitle")}</p>
             </div>
             <span className="text-sm font-bold font-mono text-emerald-600 tracking-wide bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">#39</span>
           </div>
@@ -412,13 +414,13 @@ export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
             <div className="flex items-center justify-between mb-2.5">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                 <Globe className="w-3.5 h-3.5 text-emerald-600" />
-                NASA EONET Real-Time Alerts
+                {t("nasaAlertsTitle")}
               </span>
               <button 
                 onClick={fetchNasaEvents} 
                 disabled={isLoadingNasa}
                 className="p-1 text-slate-400 hover:text-emerald-600 disabled:opacity-50 transition-colors cursor-pointer"
-                title="Refresh NASA Feed"
+                title={t("refreshNasaFeed")}
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isLoadingNasa ? "animate-spin" : ""}`} />
               </button>
@@ -427,7 +429,7 @@ export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
             {isLoadingNasa ? (
               <div className="flex items-center justify-center py-6 gap-2">
                 <Loader2 className="w-4 h-4 text-emerald-600 animate-spin" />
-                <span className="text-[10px] text-slate-400 font-medium">Loading NASA Live Feed...</span>
+                <span className="text-[10px] text-slate-400 font-medium">{t("loadingNasa")}</span>
               </div>
             ) : errorNasa ? (
               <span className="text-[9.5px] text-amber-600 block leading-relaxed">{errorNasa}</span>
@@ -448,7 +450,7 @@ export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
                       </span>
                     </div>
                     <span className="text-[8px] font-bold bg-slate-100 group-hover:bg-emerald-100 text-slate-500 group-hover:text-emerald-700 px-1.5 py-0.5 rounded-md shrink-0">
-                      Load
+                      {t("loadBtn")}
                     </span>
                   </div>
                 ))}
@@ -461,13 +463,13 @@ export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
             {/* Unit type selection buttons */}
             <div>
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">
-                Which unit to send?
+                {t("whichUnitToSend")}
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { id: "Police", icon: Shield, activeClass: "border-emerald-600 text-emerald-600 bg-emerald-50/50 shadow-sm" },
-                  { id: "Fire", icon: Flame, activeClass: "border-emerald-600 text-emerald-600 bg-emerald-50/50 shadow-sm" },
-                  { id: "Rescue", icon: Activity, activeClass: "border-emerald-600 text-emerald-600 bg-emerald-50/50 shadow-sm" }
+                  { id: "Police", labelKey: "police", icon: Shield, activeClass: "border-emerald-600 text-emerald-600 bg-emerald-50/50 shadow-sm" },
+                  { id: "Fire", labelKey: "fire", icon: Flame, activeClass: "border-emerald-600 text-emerald-600 bg-emerald-50/50 shadow-sm" },
+                  { id: "Rescue", labelKey: "rescue", icon: Activity, activeClass: "border-emerald-600 text-emerald-600 bg-emerald-50/50 shadow-sm" }
                 ].map((unit) => {
                   const IconComp = unit.icon;
                   const isSelected = selectedUnit === unit.id;
@@ -482,7 +484,7 @@ export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
                       }`}
                     >
                       <IconComp className="w-3.5 h-3.5" />
-                      <span>{unit.id}</span>
+                      <span>{t(unit.labelKey)}</span>
                     </button>
                   );
                 })}
@@ -492,7 +494,7 @@ export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
             {/* Type of incident selector dropdown */}
             <div>
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">
-                Type of Incident
+                {t("typeOfIncident")}
               </label>
               <div className="relative">
                 <select
@@ -500,12 +502,12 @@ export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
                   onChange={(e) => setIncidentType(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-semibold text-slate-700 appearance-none focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/25 transition-all cursor-pointer"
                 >
-                  <option value="Flooding">Flooding</option>
-                  <option value="Landslide">Landslide / Rockfall</option>
-                  <option value="Severe Typhoon">Severe Typhoon / Storm</option>
-                  <option value="Wildfire">Wildfire Alert</option>
-                  <option value="Medical Emergency">Medical Emergency</option>
-                  <option value="Other">Other Disaster Response</option>
+                  <option value="Flooding">{t("flooding")}</option>
+                  <option value="Landslide">{t("landslide")}</option>
+                  <option value="Severe Typhoon">{t("severeTyphoon")}</option>
+                  <option value="Wildfire">{t("wildfire")}</option>
+                  <option value="Medical Emergency">{t("medicalEmergency")}</option>
+                  <option value="Other">{t("otherDisaster")}</option>
                 </select>
                 <ChevronDown className="w-4 h-4 text-slate-500 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
@@ -514,28 +516,29 @@ export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
             {/* What is the problem description */}
             <div>
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">
-                What is the problem?
+                {t("whatIsProblem")}
               </label>
               <textarea
                 value={problemDescription}
                 onChange={(e) => setProblemDescription(e.target.value)}
-                placeholder="Describe the incident details..."
+                placeholder={t("describeIncident")}
                 rows={2.5}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-semibold text-slate-700 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/25 transition-all resize-none"
               />
               <span className="text-[8.5px] text-slate-400 mt-1 block">
-                💡 Tip: Click anywhere on the satellite map to select target coordinates.
+                {t("mapTip")}
               </span>
             </div>
 
             {/* Victim Counts */}
             <div>
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">
-                How much victims?
+                {t("howMuchVictims")}
               </label>
               <div className="grid grid-cols-4 gap-1.5">
                 {["No one", "1-4", "5-9", "Over 10"].map((opt) => {
                   const isSelected = victimCount === opt;
+                  const displayLabel = opt === "No one" ? t("noOne") : opt;
                   return (
                     <button
                       key={opt}
@@ -546,7 +549,7 @@ export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
                           : "border-slate-200 bg-slate-50 text-slate-500 hover:text-slate-700"
                       }`}
                     >
-                      {opt}
+                      {displayLabel}
                     </button>
                   );
                 })}
@@ -556,11 +559,12 @@ export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
             {/* Aggressors count */}
             <div>
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">
-                How much aggressors?
+                {t("howMuchAggressors")}
               </label>
               <div className="grid grid-cols-4 gap-1.5">
                 {["No one", "Single", "2-4", "Over 10"].map((opt) => {
                   const isSelected = aggressorCount === opt;
+                  const displayLabel = opt === "No one" ? t("noOne") : opt === "Single" ? t("single") : opt;
                   return (
                     <button
                       key={opt}
@@ -571,7 +575,7 @@ export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
                           : "border-slate-200 bg-slate-50 text-slate-500 hover:text-slate-700"
                       }`}
                     >
-                      {opt}
+                      {displayLabel}
                     </button>
                   );
                 })}
@@ -582,7 +586,7 @@ export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                  Rate the danger level
+                  {t("rateDangerLevel")}
                 </label>
               </div>
               <input
@@ -608,7 +612,7 @@ export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
             className="flex items-center gap-1.5 py-2 px-4 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer border border-slate-200 hover:bg-slate-50 rounded-xl"
           >
             <ChevronLeft className="w-4 h-4" />
-            <span>Back to Details</span>
+            <span>{t("backToDetails")}</span>
           </button>
           
           <button 
@@ -616,7 +620,7 @@ export default function SendingUnits({ onBackToDashboard }: SendingUnitsProps) {
             className="flex-1 py-2 px-5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5"
           >
             <Check className="w-4 h-4" />
-            <span>Send Units</span>
+            <span>{t("sendUnitsBtn")}</span>
           </button>
         </div>
 

@@ -15,7 +15,9 @@ import {
   X,
   ExternalLink,
   SlidersHorizontal,
+  Plus,
 } from "lucide-react";
+import { toast } from "react-toastify";
 
 // Import modular components
 import Header from "@/components/Header";
@@ -35,8 +37,10 @@ import {
   useVideoStreamUrl,
 } from "@/queries";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { useLanguage } from "@/hooks/useLanguage";
 
 export default function Home() {
+  const { t } = useLanguage();
   // Navigation State
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
@@ -186,15 +190,15 @@ export default function Home() {
           setSelectedDeviceId={setSelectedDeviceId}
         />
 
-        <section className={`flex-1 flex flex-col min-h-0 ${activeMenu === "dispatch" ? "p-0" : "p-6 overflow-y-auto bg-[#f8fafc]"}`}>
+        <section className={`flex-1 ${activeMenu === "dispatch" ? "flex flex-col min-h-0 p-0" : "p-6 overflow-y-auto bg-[#f8fafc]"}`}>
           {/* Breadcrumb Navigation trail */}
           {activeMenu !== "dispatch" && (
-            <nav className="text-[11px] font-medium text-gray-400 mb-2 flex items-center gap-1.5">
-              <span className="capitalize">{activeMenu}</span>
+            <nav className="text-[10px] font-extrabold text-slate-400 mb-3 flex items-center gap-1.5 uppercase tracking-wider select-none">
+              <span className="cursor-pointer hover:text-slate-600 transition-colors">{activeMenu}</span>
               {activeMenu === "dashboard" && selectedDeviceId && (
                 <>
-                  <ChevronRight className="w-3 h-3 text-gray-300" />
-                  <span className="hover:text-gray-600 transition-colors cursor-pointer">
+                  <ChevronRight className="w-3 h-3 text-slate-400" />
+                  <span className="text-slate-500 font-mono">
                     {selectedDeviceId}
                   </span>
                 </>
@@ -204,18 +208,70 @@ export default function Home() {
 
           {activeMenu === "dashboard" && (
             <>
-              {/* Location Title Header info */}
-              <div className="mb-5">
-                <h2 className="text-2xl font-bold tracking-tight text-gray-900 leading-snug">
-                  Camera Feed: {selectedDeviceId || "Select a Device"}
-                </h2>
-                {currentDevice && (
-                  <p className="text-xs text-gray-500 font-medium flex items-center gap-1 mt-1">
-                    <MapPin className="w-3.5 h-3.5 text-red-500 shrink-0" />
-                    Status: {currentDevice.status} | Last Seen:{" "}
-                    {new Date(currentDevice.lastSeen).toLocaleString()}
-                  </p>
-                )}
+              {/* Tactical Camera Node Header Card (Teal Mockup Style) */}
+              <div className="relative overflow-hidden bg-[#00505b] rounded-[20px] p-6 text-white mb-6 shadow-[0_1px_3px_rgba(0,0,0,0.02)] border border-teal-950/20">
+                {/* Ambient glow decoration */}
+                <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div className="absolute top-1/2 left-1/3 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+                  {/* Left stats info */}
+                  <div>
+                    <span className="text-[9px] font-extrabold text-[#99ccd1] uppercase tracking-widest block">
+                      {t("cameraFeed")}
+                    </span>
+                    <div className="flex items-center gap-3 mt-1.5">
+                      <h2 className="text-2xl md:text-3xl font-black tracking-tight text-white font-mono">
+                        📹 {selectedDeviceId || "Select a Device"}
+                      </h2>
+                      {currentDevice && (
+                        <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-lg text-[9px] font-extrabold flex items-center gap-1 select-none">
+                          {currentDevice.status.toUpperCase()} 100% ↗
+                        </span>
+                      )}
+                    </div>
+                    {currentDevice && (
+                      <p className="text-[10px] text-slate-300 font-medium flex items-center gap-1 mt-2.5">
+                        <MapPin className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                        <span>{t("lastSeen")}: {new Date(currentDevice.lastSeen).toLocaleString()}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Right Action buttons mimicking mockup */}
+                  <div className="flex items-center gap-2 flex-wrap md:flex-nowrap">
+                    <button 
+                      onClick={() => {
+                        toast.info("Mock incident triggered - surveillance note panel is active.");
+                      }}
+                      className="px-4 py-2.5 bg-[#00d084] hover:bg-[#00b372] text-[#00505b] border-none rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer flex items-center gap-1.5 focus:outline-none"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>{t("postNote") || "Add Incident"}</span>
+                    </button>
+                    
+                    <button 
+                      onClick={() => setActiveMenu("dispatch")}
+                      className="px-4 py-2.5 bg-[#0c6975] hover:bg-[#0a5a64] text-[#a5e0e7] border-none rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shadow-sm focus:outline-none"
+                    >
+                      <ArrowUpRight className="w-4 h-4 text-[#a5e0e7]" />
+                      <span>{t("sendUnitsBtn") || "Dispatch"}</span>
+                    </button>
+
+                    <button 
+                      onClick={() => {
+                        const target = document.getElementById("device-shadow-config");
+                        if (target) {
+                          target.scrollIntoView({ behavior: "smooth" });
+                        }
+                      }}
+                      className="px-4 py-2.5 bg-[#0c6975] hover:bg-[#0a5a64] text-[#a5e0e7] border-none rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 shadow-sm focus:outline-none"
+                    >
+                      <SlidersHorizontal className="w-4 h-4 text-[#a5e0e7]" />
+                      <span>{t("deviceConfigTitle")?.split(" ")[0] || "Settings"}</span>
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <MetricCards
@@ -263,29 +319,29 @@ export default function Home() {
               <div className="mb-5 flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold tracking-tight text-gray-900 leading-snug">
-                    Security Event Recordings
+                    {t("securityEventRecordings")}
                   </h2>
                   <p className="text-xs text-gray-500 font-medium mt-1">
-                    Gallery of recorded incident snapshots captured by AI nodes.
+                    {t("galleryDesc")}
                   </p>
                 </div>
               </div>
 
               {isLoadingAllAlerts ? (
                 <div className="flex-1 flex items-center justify-center min-h-[300px]">
-                  <span className="text-sm text-gray-400 font-medium animate-pulse">Loading Recordings Gallery...</span>
+                  <span className="text-sm text-gray-400 font-medium animate-pulse">{t("loadingGallery")}</span>
                 </div>
               ) : allAlerts.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center min-h-[300px] bg-white border border-gray-100 rounded-3xl p-8 shadow-sm">
-                  <Video className="w-12 h-12 text-gray-300 mb-3" />
-                  <span className="text-sm font-semibold text-gray-500">No recorded events found</span>
+                <div className="flex-1 flex flex-col items-center justify-center min-h-[300px] bg-white border border-slate-200/80 rounded-[20px] p-8 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+                  <Video className="w-12 h-12 text-slate-300 mb-3" />
+                  <span className="text-sm font-bold text-slate-500">{t("noRecordedEvents")}</span>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 pb-6">
                   {allAlerts.map((alert) => (
                     <div 
                       key={alert.alertId} 
-                      className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-250 flex flex-col group"
+                      className="bg-white border border-slate-200/80 rounded-[20px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.02)] hover:shadow-md transition-all duration-200 flex flex-col group"
                     >
                       {/* Image section */}
                       <div className="relative aspect-video bg-gray-900 overflow-hidden border-b border-gray-100">
@@ -314,7 +370,7 @@ export default function Home() {
                         
                         {/* AI Badge overlay */}
                         <div className="absolute top-3 left-3 bg-red-500/90 backdrop-blur border border-red-400/30 text-white font-bold text-[9px] px-2.5 py-1 rounded-full uppercase tracking-wider shadow">
-                          AI Incident
+                          {t("aiIncident")}
                         </div>
                       </div>
 
@@ -344,7 +400,7 @@ export default function Home() {
                             className="flex-1 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-xs font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer border border-indigo-100/50"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
-                            View Live Feed
+                            {t("viewLiveFeed")}
                           </button>
                         </div>
                       </div>
@@ -359,58 +415,73 @@ export default function Home() {
             <div className="flex-1 flex flex-col min-h-0">
               <div className="mb-5">
                 <h2 className="text-2xl font-bold tracking-tight text-gray-900 leading-snug">
-                  AI Incident Alerts History
+                  {t("alertsHistoryTitle")}
                 </h2>
                 <p className="text-xs text-gray-500 font-medium mt-1">
-                  Comprehensive audit logs and historical analysis of security violations.
+                  {t("alertsHistoryDesc")}
                 </p>
               </div>
 
               {/* Alerts statistics row */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
-                <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">
-                    Total Detections
-                  </span>
-                  <div className="text-2xl font-black text-gray-800 font-mono">
+                <div className="bg-white border border-slate-200/80 rounded-[20px] p-5 shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:shadow-md transition-all duration-200">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">
+                      {t("totalDetections")}
+                    </span>
+                    <span className="text-[9px] text-slate-400 font-bold bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100">
+                      All Time
+                    </span>
+                  </div>
+                  <div className="text-2xl font-black text-slate-800 tracking-tight font-mono mt-3">
                     {isLoadingAllAlerts ? "..." : allAlerts.length}
                   </div>
                 </div>
-                <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">
-                    High Risk (&gt;90% Conf.)
-                  </span>
-                  <div className="text-2xl font-black text-red-600 font-mono">
+                <div className="bg-white border border-slate-200/80 rounded-[20px] p-5 shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:shadow-md transition-all duration-200">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">
+                      {t("highRiskAlerts")}
+                    </span>
+                    <span className="text-[9px] text-red-650 font-bold bg-red-50 px-2 py-0.5 rounded-lg border border-red-100">
+                      Critical
+                    </span>
+                  </div>
+                  <div className="text-2xl font-black text-red-600 tracking-tight font-mono mt-3">
                     {isLoadingAllAlerts ? "..." : allAlerts.filter(a => parseFloat(a.confidence) >= 0.9).length}
                   </div>
                 </div>
-                <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">
-                    Unique Cameras Affected
-                  </span>
-                  <div className="text-2xl font-black text-indigo-600 font-mono">
+                <div className="bg-white border border-slate-200/80 rounded-[20px] p-5 shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex flex-col justify-between hover:shadow-md transition-all duration-200">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">
+                      {t("camerasAffected")}
+                    </span>
+                    <span className="text-[9px] text-slate-400 font-bold bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100">
+                      Unique
+                    </span>
+                  </div>
+                  <div className="text-2xl font-black text-[#004d56] tracking-tight font-mono mt-3">
                     {isLoadingAllAlerts ? "..." : new Set(allAlerts.map(a => a.deviceId)).size}
                   </div>
                 </div>
               </div>
 
               {/* Filtering control bar */}
-              <div className="bg-white border border-gray-100 rounded-3xl p-5 shadow-sm mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
+              <div className="bg-white border border-slate-200/80 rounded-[20px] p-5 shadow-[0_1px_3px_rgba(0,0,0,0.02)] mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
                 <div className="relative w-full md:w-80">
                   <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
                     type="text"
-                    placeholder="Search by Camera ID..."
+                    placeholder={t("searchByCameraId")}
                     value={deviceSearchQuery}
                     onChange={(e) => setDeviceSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-gray-700 placeholder-gray-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/25 transition-all"
+                    className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-slate-700 placeholder-gray-400 focus:outline-none focus:border-[#004d56] focus:ring-1 focus:ring-[#004d56]/25 transition-all bg-white"
                   />
                 </div>
 
                 <div className="flex items-center gap-3 w-full md:w-auto justify-end">
                   <SlidersHorizontal className="w-4 h-4 text-gray-400 shrink-0" />
                   <span className="text-xs font-semibold text-gray-500 whitespace-nowrap">
-                    Min Confidence: {Math.round(minConfidenceFilter * 100)}%
+                    {t("minConfidence")}: {Math.round(minConfidenceFilter * 100)}%
                   </span>
                   <input
                     type="range"
@@ -419,7 +490,7 @@ export default function Home() {
                     step={0.05}
                     value={minConfidenceFilter}
                     onChange={(e) => setMinConfidenceFilter(parseFloat(e.target.value))}
-                    className="w-32 h-1.5 bg-gray-200 accent-indigo-600 rounded-lg appearance-none cursor-pointer outline-none"
+                    className="w-32 h-1.5 bg-gray-200 accent-[#00cc88] rounded-lg appearance-none cursor-pointer outline-none"
                   />
                 </div>
               </div>
@@ -427,21 +498,21 @@ export default function Home() {
               {/* Table section */}
               {isLoadingAllAlerts ? (
                 <div className="flex-1 flex items-center justify-center min-h-[300px]">
-                  <span className="text-sm text-gray-400 font-medium animate-pulse">Loading Alerts History...</span>
+                  <span className="text-sm text-gray-400 font-medium animate-pulse">{t("loadingAlertsHistory")}</span>
                 </div>
               ) : (
-                <div className="bg-white border border-gray-100 rounded-3xl shadow-sm overflow-hidden flex-1 min-h-0 flex flex-col">
+                <div className="bg-white border border-slate-200/80 rounded-[20px] shadow-[0_1px_3px_rgba(0,0,0,0.02)] overflow-hidden flex-1 min-h-0 flex flex-col">
                   <div className="overflow-x-auto flex-1 min-h-0">
                     <table className="w-full text-left border-collapse text-xs">
                       <thead>
                         <tr className="bg-gray-50 border-b border-gray-150 text-gray-400 font-bold uppercase tracking-wider text-[10px]">
-                          <th className="p-4 w-24">Snapshot</th>
-                          <th className="p-4">Timestamp</th>
-                          <th className="p-4">Camera ID</th>
-                          <th className="p-4">Confidence</th>
-                          <th className="p-4">Distance</th>
-                          <th className="p-4">Inference</th>
-                          <th className="p-4 text-right">Action</th>
+                          <th className="p-4 w-24">{t("snapshotCol")}</th>
+                          <th className="p-4">{t("timestampCol")}</th>
+                          <th className="p-4">{t("cameraIdCol")}</th>
+                          <th className="p-4">{t("confidenceCol")}</th>
+                          <th className="p-4">{t("distanceCol")}</th>
+                          <th className="p-4">{t("inferenceCol")}</th>
+                          <th className="p-4 text-right">{t("actionCol")}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
@@ -507,7 +578,7 @@ export default function Home() {
                                     }}
                                     className="py-1.5 px-3 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-[10px] font-bold inline-flex items-center gap-1 transition-colors cursor-pointer border border-indigo-100/50"
                                   >
-                                    Monitor <ArrowUpRight className="w-3.5 h-3.5" />
+                                    {t("monitorBtn")} <ArrowUpRight className="w-3.5 h-3.5" />
                                   </button>
                                 </td>
                               </tr>
