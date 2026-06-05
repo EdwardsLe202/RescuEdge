@@ -25,6 +25,7 @@ import VideoPlayer from "@/components/VideoPlayer";
 import TimelineFlow from "@/components/TimelineFlow";
 import CommentsSidebar, { Comment } from "@/components/CommentsSidebar";
 import AlertsFeed from "@/components/AlertsFeed";
+import SendingUnits from "@/components/SendingUnits";
 
 // Import API and WebSocket integrations
 import {
@@ -185,19 +186,21 @@ export default function Home() {
           setSelectedDeviceId={setSelectedDeviceId}
         />
 
-        <section className="flex-1 flex flex-col p-6 overflow-y-auto min-h-0 bg-[#f8fafc]">
+        <section className={`flex-1 flex flex-col min-h-0 ${activeMenu === "dispatch" ? "p-0" : "p-6 overflow-y-auto bg-[#f8fafc]"}`}>
           {/* Breadcrumb Navigation trail */}
-          <nav className="text-[11px] font-medium text-gray-400 mb-2 flex items-center gap-1.5">
-            <span className="capitalize">{activeMenu}</span>
-            {activeMenu === "dashboard" && selectedDeviceId && (
-              <>
-                <ChevronRight className="w-3 h-3 text-gray-300" />
-                <span className="hover:text-gray-600 transition-colors cursor-pointer">
-                  {selectedDeviceId}
-                </span>
-              </>
-            )}
-          </nav>
+          {activeMenu !== "dispatch" && (
+            <nav className="text-[11px] font-medium text-gray-400 mb-2 flex items-center gap-1.5">
+              <span className="capitalize">{activeMenu}</span>
+              {activeMenu === "dashboard" && selectedDeviceId && (
+                <>
+                  <ChevronRight className="w-3 h-3 text-gray-300" />
+                  <span className="hover:text-gray-600 transition-colors cursor-pointer">
+                    {selectedDeviceId}
+                  </span>
+                </>
+              )}
+            </nav>
+          )}
 
           {activeMenu === "dashboard" && (
             <>
@@ -516,6 +519,10 @@ export default function Home() {
                 </div>
               )}
             </div>
+          )}
+
+          {activeMenu === "dispatch" && (
+            <SendingUnits onBackToDashboard={() => setActiveMenu("dashboard")} />
           )}
         </section>
 

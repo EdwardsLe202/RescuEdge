@@ -10,6 +10,7 @@ import {
   FileSpreadsheet,
   Settings,
   LogOut,
+  Send,
 } from "lucide-react";
 import { IDevice } from "@/types/api";
 
@@ -53,6 +54,7 @@ export default function Sidebar({
             { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
             { id: "recordings", label: "Recordings", icon: Video },
             { id: "alerts", label: "Alerts", icon: AlertTriangle },
+            { id: "dispatch", label: "Send Units", icon: Send },
           ].map((item) => {
             const Icon = item.icon;
             const isActive = activeMenu === item.id;
