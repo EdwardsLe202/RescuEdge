@@ -56,21 +56,27 @@ export default function CommentsSidebar({
       </div>
 
       {/* Scrollable feed content list */}
-      <div className="flex-1 p-4 overflow-y-auto space-y-5">
-        {comments.map((comment) => {
-          const isMock = ["1", "2", "3"].includes(comment.id);
-          const displayRole = isMock 
-            ? (comment.id === "1" ? t("forensicRole") : t("investigationRole"))
-            : comment.role;
-          const displayContent = isMock
-            ? t(`commentContent${comment.id}`)
-            : comment.content;
-          const displayTimestamp = isMock
-            ? t(`commentTime${comment.id}`)
-            : comment.timestamp;
+      <div className="flex-1 p-4 overflow-y-auto space-y-5 flex flex-col">
+        {comments.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
+            <span className="text-2xl mb-2 text-slate-300 select-none">💬</span>
+            <p className="text-xs text-slate-400 font-medium">{t("noCommentsYet")}</p>
+          </div>
+        ) : (
+          comments.map((comment) => {
+            const isMock = ["1", "2", "3"].includes(comment.id);
+            const displayRole = isMock 
+              ? (comment.id === "1" ? t("forensicRole") : t("investigationRole"))
+              : comment.role;
+            const displayContent = isMock
+              ? t(`commentContent${comment.id}`)
+              : comment.content;
+            const displayTimestamp = isMock
+              ? t(`commentTime${comment.id}`)
+              : comment.timestamp;
 
-          return (
-            <div key={comment.id} className="space-y-1.5 animate-fadeIn group">
+            return (
+              <div key={comment.id} className="space-y-1.5 animate-fadeIn group">
               
               {/* Top user profile bar */}
               <div className="flex items-center justify-between">
@@ -113,7 +119,7 @@ export default function CommentsSidebar({
 
             </div>
           );
-        })}
+        }))}
       </div>
 
       {/* Text input form block at bottom */}

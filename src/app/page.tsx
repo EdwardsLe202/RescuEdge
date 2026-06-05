@@ -35,6 +35,8 @@ import {
   useAlerts,
   useUpdateDeviceDesiredState,
   useVideoStreamUrl,
+  useComments,
+  useCreateComment,
 } from "@/queries";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -80,33 +82,11 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isCommentsOpen, setIsCommentsOpen] = useState(true);
   const [newComment, setNewComment] = useState("");
-  const [comments, setComments] = useState<Comment[]>([
-    {
-      id: "1",
-      author: "Abhay Salvi",
-      avatar: "AS",
-      role: "Sub Admin Dept. of Forensic",
-      content: "Issue is set to be resolved. Evidence files extracted successfully.",
-      timestamp: "Nov 22 01:40 PM",
-    },
-    {
-      id: "2",
-      author: "Arpit Nagar",
-      avatar: "AN",
-      role: "Sub Admin Dept. of Investigation",
-      content: "There has been a suspect in the past backside of the store near Malviya road.",
-      timestamp: "Today at 02:10 PM",
-    },
-    {
-      id: "3",
-      author: "Arpit Nagar",
-      avatar: "AN",
-      role: "Sub Admin Dept. of Investigation",
-      content: "@AbhaySalvi move forward, proceed to tag this location for standard patrols.",
-      timestamp: "Today at 02:10 PM",
-      isTagged: true,
-    },
-  ]);
+
+  // Query comments database
+  const { data: commentsResponse } = useComments();
+  const createCommentMutation = useCreateComment();
+  const comments = commentsResponse?.comments || [];
 
   // Video Player Logic & Simulation
   const [isPlaying, setIsPlaying] = useState(false);
@@ -133,19 +113,16 @@ export default function Home() {
   // Action: Add new comment
   const handleAddComment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
+    if (!newComment.trim() || createCommentMutation.isPending) return;
 
-    const added: Comment = {
-      id: String(comments.length + 1),
-      author: "Edward (Admin)",
-      avatar: "ED",
-      role: "Lead Security Officer",
-      content: newComment,
-      timestamp: "Just now",
-    };
-
-    setComments([...comments, added]);
-    setNewComment("");
+    createCommentMutation.mutate(newComment, {
+      onSuccess: () => {
+        setNewComment("");
+      },
+      onError: (err: any) => {
+        toast.error(err.message || "Failed to post comment");
+      }
+    });
   };
 
   // Timeline seeking click handler

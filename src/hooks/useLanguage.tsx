@@ -135,6 +135,7 @@ const translations: Record<Language, Record<string, string>> = {
     commentTime1: "Nov 22 01:40 PM",
     commentTime2: "Today at 02:10 PM",
     commentTime3: "Today at 02:10 PM",
+    noCommentsYet: "No comments recorded yet.",
     // Alerts Feed Added
     loadingAlertsFeed: "Loading Alerts Feed...",
     realtimeAlertsFeed: "Real-time Alerts Feed",
@@ -276,6 +277,7 @@ const translations: Record<Language, Record<string, string>> = {
     commentTime1: "22 thg 11 lúc 13:40",
     commentTime2: "Hôm nay lúc 14:10",
     commentTime3: "Hôm nay lúc 14:10",
+    noCommentsYet: "Chưa có bình luận nào được ghi nhận.",
     // Alerts Feed Added
     loadingAlertsFeed: "Đang tải luồng cảnh báo...",
     realtimeAlertsFeed: "Luồng cảnh báo thời gian thực",
