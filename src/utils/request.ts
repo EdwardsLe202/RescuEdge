@@ -16,7 +16,7 @@ clientRequest.interceptors.request.use(async (config) => {
   try {
     if (typeof window !== "undefined") {
       const session = await getSession();
-      const token = session?.idToken || session?.accessToken;
+      const token = session?.idToken;
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }

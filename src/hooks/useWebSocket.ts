@@ -12,7 +12,7 @@ export const useWebSocket = () => {
   const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    const token = session?.idToken || session?.accessToken;
+    const token = session?.idToken;
     const wsUrl = process.env.NEXT_PUBLIC_WS_API_URL;
 
     if (!token || !wsUrl) return;
